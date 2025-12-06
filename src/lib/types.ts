@@ -1,4 +1,3 @@
-
 export type Coordinate = 0 | 1 | 2 | 3;
 
 export type BoardSlotIdx = "00" | "01" | "02" | "03" |

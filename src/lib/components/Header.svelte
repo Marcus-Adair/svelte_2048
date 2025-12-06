@@ -2,8 +2,9 @@
     interface Props {
         score: number;
         best: number;
+        onStartNewGameClick: () => void;
     }
-    let { score, best }:Props = $props();
+    let { score, best, onStartNewGameClick }:Props = $props();
 </script>
 
 <header class="flex justify-center mt-6">
@@ -19,14 +20,19 @@
                         <p>Score:</p>
                         <p>{score}</p>
                     </span>
-                    <span class="border p-2 rounded-sm w-34 flex justify-between">
+                    <!-- <span class="border p-2 rounded-sm w-34 flex justify-between">
                         <p>Best:</p>
                         <p>{best}</p>
-                    </span>
+                    </span> -->
                 </div>
             </div>
 
-            <button class="border w-38 py-1.5 rounded-sm">Start new game</button>
+            <button
+                class="border w-38 py-1.5 rounded-sm cursor-pointer hover:bg-amber-200/30 transition-colors"
+                onclick={onStartNewGameClick}
+            >
+                Start new game
+            </button>
         </div>
     </div>
 </header>
