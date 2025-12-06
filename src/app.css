@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+:root {
+	/* board / page */
+	--bg: oklch(0.9782 0.012 96.4); /* #faf8ef */
+	--board: oklch(0.7558 0.024 65.3); /* #bbada0 */
+	--tile-empty: oklch(0.8141 0.022 69.7); /* #ccc0b3 */
+
+	/* tiles (background) */
+	--tile-2: oklch(9.4 0.017 67.6); /* #eee4da */
+	--tile-4: oklch(0.9108 0.035 82.9); /* #ede0c8 */
+	--tile-8: oklch(0.8091 0.105 61.2); /* #f2b179 */
+	--tile-16: oklch(0.7595 0.133 47); /* #f59563 */
+	--tile-32: oklch(0.7204 0.156 34.5); /* #f67c5f */
+	--tile-64: oklch0.(6.5 0.193 34.3); /* #f65e3b */
+	--tile-128: oklch(0.8608 0.118 91.9); /* #edcf72 */
+	--tile-256: oklch(0.8528 0.131 92.2); /* #edcc61 */
+	--tile-512: oklch(0.8431 0.142 91.7); /* #edc850 */
+	--tile-1024: oklch(0.8358 0.151 91.6); /* #edc53f */
+	--tile-2048: oklch(0.8289 0.158 91); /* #edc22e */
+}
+
+@theme inline {
+	--color-bg: var(--bg);
+	--color-board: var(--board);
+	--color-tile-empty: var(--tile-empty);
+
+	--color-tile-2: var(--tile-2);
+	--color-tile-4: var(--tile-4);
+	--color-tile-8: var(--tile-8);
+	--color-tile-16: var(--tile-16);
+	--color-tile-32: var(--tile-32);
+	--color-tile-64: var(--tile-64);
+	--color-tile-128: var(--tile-128);
+	--color-tile-256: var(--tile-256);
+	--color-tile-512: var(--tile-512);
+	--color-tile-1024: var(--tile-1024);
+	--color-tile-2048: var(--tile-2048);
+}
+
+/* @layer base {
+	body {
+		@apply bg-bg text-black;
+	}
+} */
