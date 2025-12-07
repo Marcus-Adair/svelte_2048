@@ -1,9 +1,10 @@
 <script lang="ts">
 	import Header from "$lib/components/Header.svelte";
-    import { type BoardSlotIdx, type GameState, type RefIndex } from "$lib/types";
+    import { boardSlotIdxList, type BoardSlotIdx, type Coordinate, type GameState, type RefIndex, type SlideMap } from "$lib/types";
 	import { createBoardSlotIdx, getCoordsFromBoardSlotIdx, initNewGameState } from "$lib/utils/game";
 	import { onMount } from "svelte";
     import gsap from "gsap";
+	import { slideBoardUp, slideBoardDown, slideBoardRight, slideBoardLeft } from "$lib/utils/movement";
 
     //  16 playable tiles to move and animate around
     let tile0: HTMLDivElement;
@@ -96,10 +97,14 @@
 
     let isMoving = $state(false);
 
+
+
+
+
+    
     function handleKeydown(event: KeyboardEvent) {
-        if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+        if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
         event.preventDefault();
-        
         if (isMoving) return;
 
         const tiles = {
@@ -121,98 +126,86 @@
             // tile15,
         };
 
-        // ------------------------------------------------------------------------------------------------- //
+        const ANIMATION_DURATION = 0.23;
+        const ANIMATION_EASE = "power2.inOut";
 
-        // TODO: I need to make a sliding algorithm, where i iterate Row by row, from front to back ... 
-        // I can use transpose to somehow make one sliding algorithm ,, do a transpose on the resulting coords and then do an animation after that
+        const handleMove = (
+            slideMap: SlideMap,
+            getNewCoordsFn: (
+                currentCoords: [Coordinate, Coordinate],
+                slideIdx: Coordinate
+            ) => BoardSlotIdx,
+            getAnimationDirectionFn: (
+                slideValue: number
+            ) => { [key: string]: string ; }
+        ) => {
 
-            // - the algo needs to rotate board --> do a slide -->  rotate back --> animate tile to new slotIdxs
-        // ------------------------------------------------------------------------------------------------- //
+
+            Object.entries(slideMap).forEach(([slotIdxToSlideFrom, slideMapVals]) => {
+                const boardSlotIdx = slotIdxToSlideFrom as BoardSlotIdx
+                const boardSlot = gameState.board[boardSlotIdx];
+
+                // If Tile in boardSlot
+                if (boardSlot) {
+                    Object.entries(tiles).forEach(([tileRefIdx, tile]) => {
+
+                        // Find matching Div element to animate
+                        if (boardSlot?.refIndex === tileRefIdx) {
+                            const currentCoords = getCoordsFromBoardSlotIdx(boardSlotIdx);
+                            const slideValue = slideMapVals?.slideValue! * 110;
+
+                            if (slideValue) {
+                                isMoving = true;
+                                const animationProps = {
+                                    ...getAnimationDirectionFn(slideValue),
+                                    duration: ANIMATION_DURATION,
+                                    ease: ANIMATION_EASE,
+                                    onComplete: () => {
+                                        isMoving = false;
+                                    },
+                                };
+
+                                gsap.to(tile, animationProps);
 
 
-        Object.entries(tiles).forEach(([tileRefIdx, tile]) => {
+                                // Update the game state
+                                const newCoords = getNewCoordsFn(currentCoords as [Coordinate, Coordinate], slideMapVals?.slideIdx! as Coordinate);
+                                const existingTile = gameState.board[boardSlotIdx];
 
-                // Get the matching boardSlotIdx to extract x,y 
-                let matchingBoardSlotIdx;
-                Object.entries(gameState.board).forEach(([boardSlotIdx, boardSlot]) => {
-                    if (boardSlot?.refIndex === tileRefIdx){
-                        matchingBoardSlotIdx = boardSlotIdx;
-                    }
-                })
-                if (!matchingBoardSlotIdx) return;
-                
-                const [curX, curY] = getCoordsFromBoardSlotIdx(matchingBoardSlotIdx);
-                if (event.key === 'ArrowUp') {
-                    if (curY !== 0) {
-
-                        isMoving = true;
-                        gsap.to(tile, {
-                            y: "-=110",
-                            duration: 0.2,
-                            ease: "power4.inOut",
-                            onComplete: () => {
-                                isMoving = false;
+                                gameState.board[newCoords] = existingTile; // update new slot
+                                gameState.board[boardSlotIdx] = undefined; // empty old slot
                             }
-                        });
-
-                        const newCoords = createBoardSlotIdx(curX, curY - 1);
-                        const existingTile = gameState.board[matchingBoardSlotIdx];
-                        gameState.board[newCoords] = existingTile; // update
-                        gameState.board[matchingBoardSlotIdx as BoardSlotIdx] = undefined; // empty old one
-                    }
-                } else if (event.key === 'ArrowDown') {
-                    if (curY !== 3) {
-                        isMoving = true;
-                        gsap.to(tile, {
-                            y: "+=110",
-                            duration: 0.2,
-                            ease: "power4.inOut",
-                            onComplete: () => {
-                                isMoving = false;
-                            }
-                        });
-
-                        const newCoords = createBoardSlotIdx(curX, curY + 1);
-                        const existingTile = gameState.board[matchingBoardSlotIdx];
-                        gameState.board[newCoords] = existingTile;
-                        gameState.board[matchingBoardSlotIdx as BoardSlotIdx] = undefined;
-                    }
-                } else if (event.key === 'ArrowLeft') {
-                    if (curX !== 0) {
-                        isMoving = true;
-                        gsap.to(tile, {
-                            x: "-=110",
-                            duration: 0.2,
-                            ease: "power4.inOut",
-                            onComplete: () => {
-                                isMoving = false;
-                            }
-                        });
-
-                        const newCoords = createBoardSlotIdx(curX - 1, curY);
-                        const existingTile = gameState.board[matchingBoardSlotIdx];
-                        gameState.board[newCoords] = existingTile;
-                        gameState.board[matchingBoardSlotIdx as BoardSlotIdx] = undefined;
-                    }
-                } else if (event.key === 'ArrowRight') {
-                    if (curX !== 3) {
-                        isMoving = true;
-                        gsap.to(tile, {
-                            x: "+=110",
-                            duration: 0.2,
-                            ease: "power4.inOut",
-                            onComplete: () => {
-                                isMoving = false;
-                            }
-                        });
-
-                        const newCoords = createBoardSlotIdx(curX + 1, curY);
-                        const existingTile = gameState.board[matchingBoardSlotIdx];
-                        gameState.board[newCoords] = existingTile;
-                        gameState.board[matchingBoardSlotIdx as BoardSlotIdx] = undefined;
-                    }
+                        }
+                    });
                 }
-        });
+            });
+        }
+
+        if (event.key === 'ArrowUp') {
+            handleMove(
+                slideBoardUp(boardSlotIdxList, $state.snapshot(gameState)),
+                ([curX, _], slideIdx) => createBoardSlotIdx(curX, slideIdx),
+                (slideValue) => ({ y: `-=${slideValue}` })
+            );
+        } else if (event.key === 'ArrowDown') {
+            handleMove(
+                slideBoardDown(boardSlotIdxList, $state.snapshot(gameState)),
+                ([curX, _], slideIdx) => createBoardSlotIdx(curX, slideIdx),
+                (slideValue) => ({ y: `+=${slideValue}` })
+            );
+        } else if (event.key === 'ArrowLeft') {
+            handleMove(
+                slideBoardLeft(boardSlotIdxList, $state.snapshot(gameState)),
+                ([_, curY], slideIdx) => createBoardSlotIdx(slideIdx, curY),
+                (slideValue) => ({ x: `-=${slideValue}` })
+            );
+        } else if (event.key === 'ArrowRight') {
+            handleMove(
+                slideBoardRight(boardSlotIdxList, $state.snapshot(gameState)),
+                ([_, curY], slideIdx) => createBoardSlotIdx(slideIdx, curY),
+                (slideValue) => ({ x: `+=${slideValue}` })
+            );
+        }
     }
 </script>
 

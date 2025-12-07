@@ -6,10 +6,10 @@ export type BoardSlotIdx = "00" | "01" | "02" | "03" |
                            "30" | "31" | "32" | "33";
                         
 export const boardSlotIdxList: BoardSlotIdx[] = [
-    "00","01","02","03",
-    "10","11","12","13",
-    "20","21","22","23",
-    "30","31","32","33"
+    "00","10","20","30",
+    "01","11","21","31",
+    "02","12","22","32",
+    "03","13","23","33"
 ];    
 
 export type RefIndex =
@@ -29,3 +29,5 @@ export interface GameState {
     score: number;
     // best: number;
 }
+
+export type SlideMap = Record<string, {slideValue: number; slideIdx: number} | undefined>
