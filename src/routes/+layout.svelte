@@ -11,9 +11,11 @@
 
 
 <ModeWatcher />
-<div class="py-2 relative">
-	<div class="absolute top-4 left-4">
-		<button onclick={toggleMode} class="border rounded-xl px-2 py-1 cursor-pointer">THEME!</button>
+<div class="relative">
+	<div class="absolute top-2 left-4">
+		<button onclick={toggleMode} class="border rounded-xl px-2 py-1 cursor-pointer" title="Toggle theme">
+			THEME!
+		</button>
 	</div>
     {@render children()}
 </div>

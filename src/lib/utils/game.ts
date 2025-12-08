@@ -112,3 +112,19 @@ export function spaceLeftOnBoard(gameState: GameState): boolean {
     });
     return spaceLeft;
 }
+
+export function getTileClassFromValue(value: number) {
+	if (value === 2) return "bg-tile-2 text-tile-text-dark";
+	if (value === 4) return "bg-tile-4 text-tile-text-dark";
+	if (value === 8) return "bg-tile-8 text-tile-text";
+	if (value === 16) return "bg-tile-16 text-tile-text";
+	if (value === 32) return "bg-tile-32 text-tile-text";
+	if (value === 64) return "bg-tile-64 text-tile-text";
+	if (value === 128) return "bg-tile-128 text-tile-text";
+	if (value === 256) return "bg-tile-256 text-tile-text";
+	if (value === 512) return "bg-tile-512 text-tile-text";
+	if (value === 1024) return "bg-tile-1024 text-tile-text";
+
+    // default
+    return "bg-tile-2048";
+}

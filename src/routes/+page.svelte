@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Header from "$lib/components/Header.svelte";
     import { boardSlotIdxList, type BoardSlotIdx, type Coordinate, type GameState, type RefIndex, type SlideMap } from "$lib/types";
-	import { createBoardSlotIdx, generateNewTileForGameState, getCoordsFromBoardSlotIdx, initNewGameState, spaceLeftOnBoard } from "$lib/utils/game";
+	import { createBoardSlotIdx, generateNewTileForGameState, getTileClassFromValue, getCoordsFromBoardSlotIdx, initNewGameState, spaceLeftOnBoard } from "$lib/utils/game";
 	import { onMount } from "svelte";
     import gsap from "gsap";
 	import { slideBoardUp, slideBoardDown, slideBoardRight, slideBoardLeft } from "$lib/utils/movement";
@@ -119,7 +119,7 @@
             getAnimationDirectionFn: (slideValue: number) => { [key: string]: string }
         ) => {
             const slideTweens: GSAPTween[] = [];
-            // const mergeTweens:  GSAPTween[] = [];
+            const mergeTweens:  (GSAPTween | GSAPTimeline)[] = [];
 
             Object.entries(slideMap).forEach(([slotIdxToSlideFrom, slideVals]) => {
 
@@ -137,6 +137,7 @@
 
                 if (!slideValue) return;
 
+                // Push slide animation
                 slideTweens.push(
                     gsap.to(tileEl, {
                         ...getAnimationDirectionFn(slideValue),
@@ -145,8 +146,7 @@
                         paused: true,
                     })
                 );
-
-                // Update state immediately (logic unchanged)
+                // Update state 
                 const newCoords = getNewCoordsFn(
                     currentCoords as [Coordinate, Coordinate],
                     slideVals?.slideIdx as Coordinate
@@ -155,39 +155,41 @@
 
                 if (slideVals?.merge) {
                     const updatedRef = existingTile!.refIndex;
-                    const badRef = gameState.board[newCoords]?.refIndex;
+                    const refToUnUse = gameState.board[newCoords]?.refIndex; // todo: check if fine
 
                     gameState.board[newCoords] = {
                         refIndex: updatedRef,
                         value: slideVals?.mergeValue!,
                     };
 
-                    // You can run merge animation separately (also parallel)
-                    // mergeTweens.push(
-                    //     gsap.to(tileEl, {
-                    //         scale: SCALE,
-                    //         duration: SCALE_ANIMATION_DURATION,
-                    //         ease: SCALE_ANIMATION_ANIMATION_EASE,
-                    //         paused: true,
-                    //         onStart: () => {
-                    //             if (badRef) {
-                    //                 refIdxClassMap[badRef] = undefined;
-                    //                 refIdxValueMap[badRef] = undefined;
-                    //             }
-                    //             refIdxClassMap[updatedRef] = "bg-red-500";
-                    //             refIdxValueMap[updatedRef] = slideVals.mergeValue!;
-                    //         },
-                    //     })
-                    // );
+                    mergeTweens.push(
+                        gsap.to(tileEl, {
+                            scale: SCALE,
+                            delay: SLIDE_ANIMATION_DURATION,
+                            duration: 0.02,
+                            ease: SCALE_ANIMATION_ANIMATION_EASE,
+                            paused: true,
+                            onStart: () => {
+                                // Change color on start of merge pop
+                                if (refToUnUse) {
+                                    refIdxClassMap[refToUnUse] = undefined;
+                                    refIdxValueMap[refToUnUse] = undefined;
+                                }
+                                refIdxValueMap[updatedRef] = slideVals.mergeValue!;
+                                refIdxClassMap[updatedRef] = getTileClassFromValue(slideVals.mergeValue!);
 
-                    // mergeTweens.push(
-                    //     gsap.to(tileEl, {
-                    //         scale: 1,
-                    //         duration: SCALE_ANIMATION_DURATION,
-                    //         ease: SCALE_ANIMATION_ANIMATION_EASE,
-                    //         paused: true,
-                    //     })
-                    // );
+                            },
+                            onComplete: () => {
+                                const down = gsap.to(tileEl, {
+                                    scale: 1, // scale back to normal
+                                    duration: 0.02,
+                                    ease: "power2.inOut",
+                                    paused: true,
+                                });
+                                down.play();
+                            }
+                        })
+                    )
                 } else {
                     gameState.board[newCoords] = existingTile;
                 }
@@ -197,6 +199,7 @@
 
             // Do animations all at one
             slideTweens.forEach((t) => t.play());
+            mergeTweens.forEach((t) => t.play());
         
         };
 
@@ -299,22 +302,22 @@
 
             <div id="tiles" class="absolute top-0 left-0 p-2.5 h-[450px] w-[450px]">
                 <div class="relative text-[45px] font-bold">
-                    <div bind:this={tile0} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile0"]}, `${refIdxClassMap["tile0"] ? refIdxClassMap["tile0"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile0"] ?? "noval"}</span></div>
-                    <div bind:this={tile1} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile1"]}, `${refIdxClassMap["tile1"] ? refIdxClassMap["tile1"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile1"] ?? "noval"}</span></div>
-                    <div bind:this={tile2} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile2"]}, `${refIdxClassMap["tile2"] ? refIdxClassMap["tile2"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile2"] ?? "noval"}</span></div>
-                    <div bind:this={tile3} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile3"]}, `${refIdxClassMap["tile3"] ? refIdxClassMap["tile3"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile3"] ?? "noval"}</span></div>
-                    <div bind:this={tile4} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile4"]}, `${refIdxClassMap["tile4"] ? refIdxClassMap["tile4"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile4"] ?? "noval"}</span></div>
-                    <div bind:this={tile5} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile5"]}, `${refIdxClassMap["tile5"] ? refIdxClassMap["tile5"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile5"] ?? "noval"}</span></div>
-                    <div bind:this={tile6} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile6"]}, `${refIdxClassMap["tile6"] ? refIdxClassMap["tile6"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile6"] ?? "noval"}</span></div>
-                    <div bind:this={tile7} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile7"]}, `${refIdxClassMap["tile7"] ? refIdxClassMap["tile7"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile7"] ?? "noval"}</span></div>
-                    <div bind:this={tile8} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile8"]}, `${refIdxClassMap["tile8"] ? refIdxClassMap["tile8"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile8"] ?? "noval"}</span></div>
-                    <div bind:this={tile9} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile9"]}, `${refIdxClassMap["tile9"] ? refIdxClassMap["tile9"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile9"] ?? "noval"}</span></div>
-                    <div bind:this={tile10} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile10"]}, `${refIdxClassMap["tile10"] ? refIdxClassMap["tile10"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile10"] ?? "noval"}</span></div>
-                    <div bind:this={tile11} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile11"]}, `${refIdxClassMap["tile11"] ? refIdxClassMap["tile11"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile11"] ?? "noval"}</span></div>
-                    <div bind:this={tile12} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile12"]}, `${refIdxClassMap["tile12"] ? refIdxClassMap["tile12"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile12"] ?? "noval"}</span></div>
-                    <div bind:this={tile13} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile13"]}, `${refIdxClassMap["tile13"] ? refIdxClassMap["tile13"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile13"] ?? "noval"}</span></div>
-                    <div bind:this={tile14} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile14"]}, `${refIdxClassMap["tile14"] ? refIdxClassMap["tile14"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile14"] ?? "noval"}</span></div>
-                    <div bind:this={tile15} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile15"]}, `${refIdxClassMap["tile15"] ? refIdxClassMap["tile15"] : ""}`]}><span class="text-tile-text">{refIdxValueMap["tile15"] ?? "noval"}</span></div>
+                    <div bind:this={tile0} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile0"]}, `${refIdxClassMap["tile0"] ? refIdxClassMap["tile0"] : ""}`]}><span>{refIdxValueMap["tile0"] ?? "noval"}</span></div>
+                    <div bind:this={tile1} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile1"]}, `${refIdxClassMap["tile1"] ? refIdxClassMap["tile1"] : ""}`]}><span>{refIdxValueMap["tile1"] ?? "noval"}</span></div>
+                    <div bind:this={tile2} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile2"]}, `${refIdxClassMap["tile2"] ? refIdxClassMap["tile2"] : ""}`]}><span>{refIdxValueMap["tile2"] ?? "noval"}</span></div>
+                    <div bind:this={tile3} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile3"]}, `${refIdxClassMap["tile3"] ? refIdxClassMap["tile3"] : ""}`]}><span>{refIdxValueMap["tile3"] ?? "noval"}</span></div>
+                    <div bind:this={tile4} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile4"]}, `${refIdxClassMap["tile4"] ? refIdxClassMap["tile4"] : ""}`]}><span>{refIdxValueMap["tile4"] ?? "noval"}</span></div>
+                    <div bind:this={tile5} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile5"]}, `${refIdxClassMap["tile5"] ? refIdxClassMap["tile5"] : ""}`]}><span>{refIdxValueMap["tile5"] ?? "noval"}</span></div>
+                    <div bind:this={tile6} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile6"]}, `${refIdxClassMap["tile6"] ? refIdxClassMap["tile6"] : ""}`]}><span>{refIdxValueMap["tile6"] ?? "noval"}</span></div>
+                    <div bind:this={tile7} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile7"]}, `${refIdxClassMap["tile7"] ? refIdxClassMap["tile7"] : ""}`]}><span>{refIdxValueMap["tile7"] ?? "noval"}</span></div>
+                    <div bind:this={tile8} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile8"]}, `${refIdxClassMap["tile8"] ? refIdxClassMap["tile8"] : ""}`]}><span>{refIdxValueMap["tile8"] ?? "noval"}</span></div>
+                    <div bind:this={tile9} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile9"]}, `${refIdxClassMap["tile9"] ? refIdxClassMap["tile9"] : ""}`]}><span>{refIdxValueMap["tile9"] ?? "noval"}</span></div>
+                    <div bind:this={tile10} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile10"]}, `${refIdxClassMap["tile10"] ? refIdxClassMap["tile10"] : ""}`]}><span>{refIdxValueMap["tile10"] ?? "noval"}</span></div>
+                    <div bind:this={tile11} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile11"]}, `${refIdxClassMap["tile11"] ? refIdxClassMap["tile11"] : ""}`]}><span>{refIdxValueMap["tile11"] ?? "noval"}</span></div>
+                    <div bind:this={tile12} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile12"]}, `${refIdxClassMap["tile12"] ? refIdxClassMap["tile12"] : ""}`]}><span>{refIdxValueMap["tile12"] ?? "noval"}</span></div>
+                    <div bind:this={tile13} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile13"]}, `${refIdxClassMap["tile13"] ? refIdxClassMap["tile13"] : ""}`]}><span>{refIdxValueMap["tile13"] ?? "noval"}</span></div>
+                    <div bind:this={tile14} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile14"]}, `${refIdxClassMap["tile14"] ? refIdxClassMap["tile14"] : ""}`]}><span>{refIdxValueMap["tile14"] ?? "noval"}</span></div>
+                    <div bind:this={tile15} class={["absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center", {"opacity-0": !refIdxClassMap["tile15"]}, `${refIdxClassMap["tile15"] ? refIdxClassMap["tile15"] : ""}`]}><span>{refIdxValueMap["tile15"] ?? "noval"}</span></div>
                 </div>
             </div>
         </div>
@@ -323,7 +326,7 @@
     <footer class="flex justify-center">
         <div class="flex w-[450px]">
             <span class="px-1">
-                <span class="font-extrabold text-lg underline underline-offset-3 decoration-2">HOW TO PLAY:</span> Use your <span class="font-bold">arrow keys</span>
+                <span class="font-extrabold text-lg underline underline-offset-3 decoration-2 leading-tight">HOW TO PLAY:</span> Use your <span class="font-bold">arrow keys</span>
                 to move the tiles. Tiles with the <span class="font-bold">same number merge into one</span> tile when they touch.
                 Add them up to reach <span class="font-bold">2048</span>!
             </span>
