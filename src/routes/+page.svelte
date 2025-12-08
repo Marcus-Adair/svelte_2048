@@ -97,11 +97,6 @@
 
     let isMoving = $state(false);
 
-
-
-
-
-    
     function handleKeydown(event: KeyboardEvent) {
         if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
         event.preventDefault();
@@ -126,8 +121,11 @@
             // tile15,
         };
 
-        const ANIMATION_DURATION = 0.23;
-        const ANIMATION_EASE = "power2.inOut";
+        const SLIDE_ANIMATION_DURATION = 0.17;
+        const SLIDE_ANIMATION_ANIMATION_EASE = "power2.inOut";
+        const SCALE_ANIMATION_DURATION = 0.07;
+        const SCALE_ANIMATION_ANIMATION_EASE = "power2.inOut";
+        const SCALE = 1.09;
 
         const handleMove = (
             slideMap: SlideMap,
@@ -139,7 +137,6 @@
                 slideValue: number
             ) => { [key: string]: string ; }
         ) => {
-
 
             Object.entries(slideMap).forEach(([slotIdxToSlideFrom, slideMapVals]) => {
                 const boardSlotIdx = slotIdxToSlideFrom as BoardSlotIdx
@@ -155,24 +152,57 @@
                             const slideValue = slideMapVals?.slideValue! * 110;
 
                             if (slideValue) {
+                                const tl = gsap.timeline();
                                 isMoving = true;
-                                const animationProps = {
+                                tl.to(tile, {
                                     ...getAnimationDirectionFn(slideValue),
-                                    duration: ANIMATION_DURATION,
-                                    ease: ANIMATION_EASE,
+                                    duration: SLIDE_ANIMATION_DURATION,
+                                    ease: SLIDE_ANIMATION_ANIMATION_EASE,
                                     onComplete: () => {
                                         isMoving = false;
                                     },
-                                };
+                                });
 
-                                gsap.to(tile, animationProps);
-
-
-                                // Update the game state
+                                 // Update the game state
                                 const newCoords = getNewCoordsFn(currentCoords as [Coordinate, Coordinate], slideMapVals?.slideIdx! as Coordinate);
                                 const existingTile = gameState.board[boardSlotIdx];
+                                
+                                if (slideMapVals?.merge){
+                                    const updatedTileRefIndex = existingTile?.refIndex as RefIndex;
+                                    
+                                    // Tile that disappears from merge
+                                    const badTileRefIndex = gameState.board[newCoords]?.refIndex;
 
-                                gameState.board[newCoords] = existingTile; // update new slot
+                                    // upd
+                                    gameState.board[newCoords] = { refIndex: updatedTileRefIndex, value: slideMapVals.mergeValue as number};
+
+                                    isMoving = true;
+                                    tl.to(tile, {
+                                        duration: 0, // todo
+                                        onComplete: () => {
+                                            isMoving = false;
+                                            refIdxClassMap[badTileRefIndex!] = undefined;
+                                            refIdxValueMap[badTileRefIndex!] = undefined;
+                                            refIdxClassMap[updatedTileRefIndex] = "bg-red-500";
+                                            refIdxValueMap[updatedTileRefIndex] = slideMapVals.mergeValue;
+                                        },
+                                    });
+                                    tl.to(tile, {
+                                        scale: SCALE,
+                                        duration: SCALE_ANIMATION_DURATION,
+                                        ease: SCALE_ANIMATION_ANIMATION_EASE
+                                    });
+                                    tl.to(tile, {
+                                        scale: 1,
+                                        duration: SCALE_ANIMATION_DURATION,
+                                        ease: SCALE_ANIMATION_ANIMATION_EASE,
+                                        onComplete: () => {
+                                            isMoving = false;
+                                        },
+                                    });
+                                } else {
+                                    gameState.board[newCoords] = existingTile; // update new slot
+                                }
                                 gameState.board[boardSlotIdx] = undefined; // empty old slot
                             }
                         }

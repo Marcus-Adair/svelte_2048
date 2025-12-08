@@ -31,14 +31,32 @@ export function slideBoardUp(list: BoardSlotIdx[], gameState: GameState) {
                         gameState.board[potentialSlotIdx] = existingTile; // update
                         gameState.board[boardSlotIdx as BoardSlotIdx] = undefined; // empty old one
                         break;
-                    } 
+                    } else {
+                        if (gameState.board[potentialSlotIdx].value === gameState.board[boardSlotIdx].value) {
+                            
+                            // TODO: do the slide map, and tag as a merge
+                            const diff = Math.max(y, j) - Math.min(y, j);
+                            const mergeValue = gameState.board[potentialSlotIdx].value + gameState.board[boardSlotIdx].value;
+
+                            slideMap[boardSlotIdx] = {
+                                slideValue: diff,
+                                slideIdx: j,
+                                merge: true,
+                                mergeValue
+                            } 
+                            const existingTile = gameState.board[boardSlotIdx];
+            
+                            gameState.board[potentialSlotIdx] = { ...existingTile, value: mergeValue }; // update
+                            gameState.board[boardSlotIdx as BoardSlotIdx] = undefined; // empty old one
+                            break;
+                        }
+                    }
                 };
             }
         });
     }
     return slideMap;
 }
-
 
 export function slideBoardDown(list: BoardSlotIdx[], gameState: GameState) {
     const slideMap: SlideMap = {};

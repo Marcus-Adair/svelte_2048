@@ -30,4 +30,12 @@ export interface GameState {
     // best: number;
 }
 
-export type SlideMap = Record<string, {slideValue: number; slideIdx: number} | undefined>
+export type SlideMap = Record<
+    string, 
+    { 
+        slideValue: number; // Number of spaces to slide
+        slideIdx: number // New Coordinate after sliding (can be for either x or y axis)
+        merge?: boolean;
+        mergeValue?: number;
+    } | undefined 
+>
