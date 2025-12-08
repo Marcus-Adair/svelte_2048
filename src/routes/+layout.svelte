@@ -9,7 +9,6 @@
 	<link rel="icon" href="https://www.2048.org/favicon.ico" />
 </svelte:head>
 
-
 <ModeWatcher />
 <div class="relative">
 	<div class="absolute top-2 left-4">

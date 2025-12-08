@@ -1,6 +1,7 @@
 import type { BoardSlotIdx, GameState, Coordinate } from "$lib/types";
 // ----------------------------------- //
 
+// Helpers for indexing into the game board
 export function createBoardSlotIdx( x: number, y: number): BoardSlotIdx {
     return `${x}${y}` as BoardSlotIdx;
 }
@@ -10,32 +11,14 @@ export function getCoordsFromBoardSlotIdx(boardSlotIdx: BoardSlotIdx): [number, 
     return [x,y]
 }
 
-export function initNewGameState() {
+// Returns initialized GameState obj
+export function initNewGameState(): GameState {
     const newGameState: GameState = {
         board: {
-            // Row 0
-            "00": undefined,
-            "01": undefined,
-            "02": undefined,
-            "03": undefined,
-          
-            // Row 1
-            "10": undefined,
-            "11": undefined,
-            "12": undefined,
-            "13": undefined,
-    
-            // Row 2
-            "20": undefined,
-            "21": undefined,
-            "22": undefined,
-            "23": undefined,
-    
-            // Row 3
-            "30": undefined,
-            "31": undefined,
-            "32": undefined,
-            "33": undefined,
+            "00": undefined, "01": undefined, "02": undefined, "03": undefined, // Row 0
+            "10": undefined, "11": undefined, "12": undefined, "13": undefined,// Row 1
+            "20": undefined, "21": undefined, "22": undefined, "23": undefined, // Row 2
+            "30": undefined, "31": undefined, "32": undefined, "33": undefined, // Row 3
         },
         score: 0,
         step: 0,
@@ -80,10 +63,11 @@ export function initNewGameState() {
 }
 
 
+// Randomly generate 2 or 4 with a bias
 export function generateNewTileValue(){
     return  Math.random() < 0.6 ? 2 : 4;
 }
-
+// Generate random space roll (BoardSlotIdx) and new tile value
 export function generateNewTileForGameState(gameState: GameState): {boardSlotIdx: BoardSlotIdx, value: number} | undefined {
     let foundNonDupRoll = false;
     let x;
@@ -101,7 +85,7 @@ export function generateNewTileForGameState(gameState: GameState): {boardSlotIdx
     }
 }
 
-
+// Returns if there's space left on the board or not for spawning a new tile
 export function spaceLeftOnBoard(gameState: GameState): boolean {
     let spaceLeft = false;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -113,18 +97,20 @@ export function spaceLeftOnBoard(gameState: GameState): boolean {
     return spaceLeft;
 }
 
+// For styling tiles
+export const TileClassMap: Record<number, string> = {
+	2: "bg-tile-2 text-tile-text-dark",
+	4: "bg-tile-4 text-tile-text-dark",
+	8: "bg-tile-8 text-tile-text",
+	16: "bg-tile-16 text-tile-text",
+	32: "bg-tile-32 text-tile-text",
+	64: "bg-tile-64 text-tile-text",
+	128: "bg-tile-128 text-tile-text",
+	256: "bg-tile-256 text-tile-text",
+	512: "bg-tile-512 text-tile-text",
+	1024: "bg-tile-1024 text-tile-text",
+	2048: "bg-tile-2048 text-tile-text",
+};
 export function getTileClassFromValue(value: number) {
-	if (value === 2) return "bg-tile-2 text-tile-text-dark";
-	if (value === 4) return "bg-tile-4 text-tile-text-dark";
-	if (value === 8) return "bg-tile-8 text-tile-text";
-	if (value === 16) return "bg-tile-16 text-tile-text";
-	if (value === 32) return "bg-tile-32 text-tile-text";
-	if (value === 64) return "bg-tile-64 text-tile-text";
-	if (value === 128) return "bg-tile-128 text-tile-text";
-	if (value === 256) return "bg-tile-256 text-tile-text";
-	if (value === 512) return "bg-tile-512 text-tile-text";
-	if (value === 1024) return "bg-tile-1024 text-tile-text";
-
-    // default
-    return "bg-tile-2048";
+	return TileClassMap[value] ?? TileClassMap[2048];
 }
