@@ -3,6 +3,7 @@
 		"*.css": "tailwindcss"
 	},
 	"cSpell.words": [
-		"noval"
+		"noval",
+		"tweens"
 	]
 }

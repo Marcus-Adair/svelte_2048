@@ -78,3 +78,21 @@ export function initNewGameState() {
 export function generateNewTileValue(){
     return  Math.random() < 0.6 ? 2 : 4;
 }
+
+export function generateNewTileForGameState(gameState: GameState): {boardSlotIdx: BoardSlotIdx, value: number} | undefined {
+    let foundNonDupRoll = false;
+    let x;
+    let y;
+    while (!foundNonDupRoll) {
+        x  = Math.floor(Math.random() * 4) as Coordinate;
+        y = Math.floor(Math.random() * 4) as Coordinate;
+
+        const boardSlotIdx = createBoardSlotIdx(x,y);
+
+        if (!gameState.board[boardSlotIdx]){
+            foundNonDupRoll = true
+            return {boardSlotIdx, value: generateNewTileValue()};
+        }
+    }
+}
+
