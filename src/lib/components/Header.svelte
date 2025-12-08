@@ -10,7 +10,7 @@
 <header class="flex justify-center mt-6">
     <div class="flex w-[450px] justify-between">
         <div class="flex flex-col gap-2">
-            <span class="text-8xl font-bold">2048</span>
+            <span class="text-8xl font-bold tracking-tight">2048</span>
             <span class="text-xl w-60 px-1">Join numbers to get to the <span class="font-semibold">2048</span> tile!</span>
         </div>
 

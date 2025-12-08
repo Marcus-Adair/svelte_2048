@@ -22,23 +22,23 @@ export function slideBoardUp(list: BoardSlotIdx[], gameState: GameState) {
     
                     // If slot isn't taken 
                     if (!gameState.board[potentialSlotIdx]) {
-                        const diff = Math.max(y, j) - Math.min(y, j);
-                        slideMap[boardSlotIdx] = { slideValue: diff, slideIdx: j}; 
+                        const translateDiff = Math.max(y, j) - Math.min(y, j);
+                        slideMap[boardSlotIdx] = { slideValue: translateDiff, slideIdx: j}; 
     
                         // update state 
                         const existingTile = gameState.board[boardSlotIdx];
                 
                         gameState.board[potentialSlotIdx] = existingTile; // update
-                        gameState.board[boardSlotIdx as BoardSlotIdx] = undefined; // empty old one
+                         // empty old one
                         break;
                     } else {
                         if (gameState.board[potentialSlotIdx].value === gameState.board[boardSlotIdx].value) {
                             
-                            const diff = Math.max(y, j) - Math.min(y, j);
+                            const translateDiff = Math.max(y, j) - Math.min(y, j);
                             const mergeValue = gameState.board[potentialSlotIdx].value + gameState.board[boardSlotIdx].value;
 
                             slideMap[boardSlotIdx] = {
-                                slideValue: diff,
+                                slideValue: translateDiff,
                                 slideIdx: j,
                                 merge: true,
                                 mergeValue
@@ -72,8 +72,8 @@ export function slideBoardDown(list: BoardSlotIdx[], gameState: GameState) {
                     const potentialSlotIdx = createBoardSlotIdx(x, j);
     
                     if (!gameState.board[potentialSlotIdx]) {
-                        const diff = Math.max(y, j) - Math.min(y, j);
-                        slideMap[boardSlotIdx] = { slideValue: diff, slideIdx: j}; 
+                        const translateDiff = Math.max(y, j) - Math.min(y, j);
+                        slideMap[boardSlotIdx] = { slideValue: translateDiff, slideIdx: j}; 
 
                         const existingTile = gameState.board[boardSlotIdx];
                 
@@ -84,11 +84,11 @@ export function slideBoardDown(list: BoardSlotIdx[], gameState: GameState) {
                         if (gameState.board[potentialSlotIdx].value === gameState.board[boardSlotIdx].value) {
                             
                             // TODO: do the slide map, and tag as a merge
-                            const diff = Math.max(y, j) - Math.min(y, j);
+                            const translateDiff = Math.max(y, j) - Math.min(y, j);
                             const mergeValue = gameState.board[potentialSlotIdx].value + gameState.board[boardSlotIdx].value;
 
                             slideMap[boardSlotIdx] = {
-                                slideValue: diff,
+                                slideValue: translateDiff,
                                 slideIdx: j,
                                 merge: true,
                                 mergeValue
@@ -113,11 +113,12 @@ export function slideBoardLeft(list: BoardSlotIdx[], gameState: GameState) {
 
     // skips left-most row 
     for (let i = 1; i <= 3; i++) {
-        // const row =  list.slice(i * 4, i * 4 + 4);
+
         const col = [0, 1, 2, 3].map(r => list[r * 4 + i]);
         
         col.forEach((boardSlotIdx) => {
             if (gameState.board[boardSlotIdx] !== undefined) {
+                
                 const [x,y] = getCoordsFromBoardSlotIdx(boardSlotIdx);
 
                 for (let j = 0; j <= x; j++) {
@@ -125,8 +126,8 @@ export function slideBoardLeft(list: BoardSlotIdx[], gameState: GameState) {
     
                     // If slot isn't taken 
                     if (!gameState.board[potentialSlotIdx]) {
-                        const diff = Math.max(x, j) - Math.min(x, j);
-                        slideMap[boardSlotIdx] = { slideValue: diff, slideIdx: j}; 
+                        const translateDiff = Math.max(x, j) - Math.min(x, j);
+                        slideMap[boardSlotIdx] = { slideValue: translateDiff, slideIdx: j}; 
     
                         // update state 
                         const existingTile = gameState.board[boardSlotIdx];
@@ -137,12 +138,12 @@ export function slideBoardLeft(list: BoardSlotIdx[], gameState: GameState) {
                     } else {
                         if (gameState.board[potentialSlotIdx].value === gameState.board[boardSlotIdx].value) {
                             
-                            // TODO: do the slide map, and tag as a merge
-                            const diff = Math.max(y, j) - Math.min(y, j);
+                            const translateDiff = Math.max(x, j) - Math.min(y, j);
+
                             const mergeValue = gameState.board[potentialSlotIdx].value + gameState.board[boardSlotIdx].value;
 
                             slideMap[boardSlotIdx] = {
-                                slideValue: diff,
+                                slideValue: translateDiff,
                                 slideIdx: j,
                                 merge: true,
                                 mergeValue
@@ -167,20 +168,19 @@ export function slideBoardRight(list: BoardSlotIdx[], gameState: GameState) {
 
     // skip right-most row (index 3)
     for (let i = 2; i >= 0; i--) {
-        // const row = list.slice(i * 4, i * 4 + 4);
         const col = [0, 1, 2, 3].map(r => list[r * 4 + i]);
-
 
         col.forEach((boardSlotIdx) => {
             if (gameState.board[boardSlotIdx] !== undefined) {
+               
                 const [x, y] = getCoordsFromBoardSlotIdx(boardSlotIdx);
     
                 for (let j = 3; j >= x; j--) {
                     const potentialSlotIdx = createBoardSlotIdx(j, y);
     
                     if (!gameState.board[potentialSlotIdx]) {
-                        const diff = Math.max(x, j) - Math.min(x, j);
-                        slideMap[boardSlotIdx] = { slideValue: diff, slideIdx: j}; 
+                        const translateDiff = Math.max(x, j) - Math.min(x, j);
+                        slideMap[boardSlotIdx] = { slideValue: translateDiff, slideIdx: j}; 
 
                         const existingTile = gameState.board[boardSlotIdx];
                 
@@ -191,11 +191,11 @@ export function slideBoardRight(list: BoardSlotIdx[], gameState: GameState) {
                         if (gameState.board[potentialSlotIdx].value === gameState.board[boardSlotIdx].value) {
                             
                             // TODO: do the slide map, and tag as a merge
-                            const diff = Math.max(y, j) - Math.min(y, j);
+                            const translateDiff = Math.max(x, j) - Math.min(x, j);
                             const mergeValue = gameState.board[potentialSlotIdx].value + gameState.board[boardSlotIdx].value;
 
                             slideMap[boardSlotIdx] = {
-                                slideValue: diff,
+                                slideValue: translateDiff,
                                 slideIdx: j,
                                 merge: true,
                                 mergeValue

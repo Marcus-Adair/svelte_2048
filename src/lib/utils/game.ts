@@ -44,11 +44,14 @@ export function initNewGameState() {
     // Generate/set first Tile
     const x = Math.floor(Math.random() * 4) as Coordinate;
     const y = Math.floor(Math.random() * 4) as Coordinate;
+    // const x = 0;
+    // const y = 0;
 
     const firstStartingVal = generateNewTileValue();
 
     newGameState.board[createBoardSlotIdx(x,y)] = {
         value: firstStartingVal,
+        // value: 2,
         refIndex: "tile0"
     };
 
@@ -61,13 +64,15 @@ export function initNewGameState() {
     while (!foundNonDupRoll) {
         x2  = Math.floor(Math.random() * 4) as Coordinate;
         y2 = Math.floor(Math.random() * 4) as Coordinate;
-
+        // x2  = 3;
+        // y2 = 0;
         if (createBoardSlotIdx(x,y) !== createBoardSlotIdx(x2,y2)){
             foundNonDupRoll = true
         }
     }
     newGameState.board[createBoardSlotIdx(x2 as number,y2 as number)] = {
         value: secondStartingVal,
+        // value: 2,
         refIndex: "tile1"
     };
 
@@ -89,10 +94,21 @@ export function generateNewTileForGameState(gameState: GameState): {boardSlotIdx
 
         const boardSlotIdx = createBoardSlotIdx(x,y);
 
-        if (!gameState.board[boardSlotIdx]){
+        if (gameState.board[boardSlotIdx] === undefined){
             foundNonDupRoll = true
             return {boardSlotIdx, value: generateNewTileValue()};
         }
     }
 }
 
+
+export function spaceLeftOnBoard(gameState: GameState): boolean {
+    let spaceLeft = false;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    Object.entries(gameState.board).forEach(([_, boardSlot]) => {
+        if (boardSlot === undefined){
+            spaceLeft = true;
+        }
+    });
+    return spaceLeft;
+}
