@@ -31,11 +31,19 @@ export interface GameState {
 }
 
 export type SlideMap = Record<
-    string, 
+    string, // TODO: change to specific index type
     { 
         slideValue: number; // Number of spaces to slide
         slideIdx: number // New Coordinate after sliding (can be for either x or y axis)
-        merge?: boolean;
-        mergeValue?: number;
     } | undefined 
+>
+
+
+export type MergeMap = Record<
+    string,
+    {
+        mergeValue: number; // If mergeValue is undefined then the Tile got killed in merge
+        refIndex: RefIndex;
+
+    } | undefined
 >

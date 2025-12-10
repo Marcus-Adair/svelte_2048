@@ -5,10 +5,10 @@ import type { BoardSlotIdx, GameState, Coordinate } from "$lib/types";
 export function createBoardSlotIdx( x: number, y: number): BoardSlotIdx {
     return `${x}${y}` as BoardSlotIdx;
 }
-export function getCoordsFromBoardSlotIdx(boardSlotIdx: BoardSlotIdx): [number, number] {
+export function getCoordsFromBoardSlotIdx(boardSlotIdx: BoardSlotIdx): [Coordinate, Coordinate] {
     const x = Number(boardSlotIdx[0]);
     const y = Number(boardSlotIdx[1]);
-    return [x,y]
+    return [x as Coordinate, y as Coordinate]
 }
 
 // Returns initialized GameState obj
