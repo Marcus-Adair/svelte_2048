@@ -14,8 +14,7 @@ import { createBoardSlotIdx, getCoordsFromBoardSlotIdx } from "./game";
  - After merges, always slide again to pack tiles.
 
 */
-export function slideBoardUp(list: BoardSlotIdx[], gameState: GameState) {
-
+export function slideBoard(direction: "up" | "down" | "left" | "right", list: BoardSlotIdx[], gameState: GameState) {
     const gameStateBefore = {
         ...gameState,
         board: { ...gameState.board },
@@ -27,22 +26,53 @@ export function slideBoardUp(list: BoardSlotIdx[], gameState: GameState) {
     const slideMap: SlideMap = {};
     const mergeMap: MergeMap = {};
 
-    // For each column
-    for (let i = 0; i <= 3; i++) {
-        const col = [0, 1, 2, 3].map(r => list[r * 4 + i]);
+    interface TraversePattern {
+        start: number;
+        end: number;
+        step: number;
+    }
+
+    let reverseOp = false;
+    let traversePattern: TraversePattern = {
+        start: 0,
+        end: 3,
+        step: 1
+    } 
+    
+    if (direction === "down" || direction == "right") {
+        traversePattern = {
+            start: 3,
+            end: 0,
+            step: -1
+        }
+        reverseOp = true;
+    }
+
+    const horizontal = (direction === "left" || direction === "right")
+    function getLine(i: number): BoardSlotIdx[] {
+        if (!horizontal) {
+            return [0, 1, 2, 3].map(r => list[r * 4 + i]);  // column
+        } else {
+            const start = i * 4;
+            return list.slice(start, start + 4); // row
+        }
+    }
+
+    for (let i = traversePattern.start; reverseOp ? i >= traversePattern.end : i <= traversePattern.end; i += traversePattern.step) {
+        const colOrRow = getLine(i);
 
         function slideCol() {
-            for (let i = 0; i <= 3; i++) {
-                const boardSlotIdx = col[i] as BoardSlotIdx;
-                // console.log("looking at boardSlotIdx: ", boardSlotIdx)
+            for (let i_ = traversePattern.start; reverseOp ? i_ >= traversePattern.end : i_ <= traversePattern.end; i_ += traversePattern.step) {
+                const boardSlotIdx = colOrRow[i_] as BoardSlotIdx;
 
                 // If Tile to slide in boardSlot
                 if (internalGameState.board[boardSlotIdx] !== undefined) {
                     const [x, y] = getCoordsFromBoardSlotIdx(boardSlotIdx);
     
                     // Try to slide as far as possible
-                    for (let j = 0; j < y; j++) {
-                        const potentialSlotIdx = createBoardSlotIdx(x, j);
+                    const coordToComp = horizontal ? x : y; 
+                    for (let j = traversePattern.start; reverseOp ? j > coordToComp : j < coordToComp; j += traversePattern.step) {
+                        const potentialSlotIdx = horizontal ?  createBoardSlotIdx(j, y) : createBoardSlotIdx(x, j);
 
                         // If free board slot
                         if (!internalGameState.board[potentialSlotIdx]) {
@@ -59,13 +89,14 @@ export function slideBoardUp(list: BoardSlotIdx[], gameState: GameState) {
         slideCol();
 
         // 2. merge the col 
-        for (let i = 0; i < 3; i++) {
-            const boardSlotIdx = col[i] as BoardSlotIdx;
+        for (let i = traversePattern.start; reverseOp ? i > traversePattern.end : i < traversePattern.end; i += traversePattern.step) {
+            const boardSlotIdx = colOrRow[i] as BoardSlotIdx;
             if (internalGameState.board[boardSlotIdx] !== undefined) {
                 const [x, y] = getCoordsFromBoardSlotIdx(boardSlotIdx);
 
-                const potentialMergeSlotIdx = createBoardSlotIdx(x, y + 1);
-
+                const posNegDir = direction === "up" || direction === "left" ? -1 : 1; 
+                const potentialMergeSlotIdx = horizontal ? createBoardSlotIdx(x + posNegDir, y) : createBoardSlotIdx(x, y + posNegDir);
+                
                 // If Equal Values
                 if (internalGameState.board[boardSlotIdx]?.value !== undefined
                     && internalGameState.board[boardSlotIdx]?.value === internalGameState.board[potentialMergeSlotIdx]?.value)
@@ -75,37 +106,30 @@ export function slideBoardUp(list: BoardSlotIdx[], gameState: GameState) {
                         continue; // Go to next if tile has been merged already
                     }
 
-                    const oldSlotIdxToMergeInto= list.find((slotIdxToMergeInto) => {
+                    const oldSlotIdxToMergeInto = list.find((slotIdxToMergeInto) => {
                         return (gameStateBefore.board[slotIdxToMergeInto]?.refIndex === internalGameState.board[boardSlotIdx]?.refIndex);
                     });
                     const oldSlotIdxToKill = list.find((slotIdxToKill) => {
                         return (gameStateBefore.board[slotIdxToKill]?.refIndex === internalGameState.board[potentialMergeSlotIdx]?.refIndex);
                     });
 
-
-
                     // Add a slide animation for the tile that slides, merges, and dies
-                    const [, oldY] = getCoordsFromBoardSlotIdx(oldSlotIdxToKill!);
-                    const [, newY] = getCoordsFromBoardSlotIdx(boardSlotIdx); // Merge it to the one that doesn't die
-                    const slideValue = Math.abs(oldY - newY);
+                    const [oldX, oldY] = getCoordsFromBoardSlotIdx(oldSlotIdxToKill!);
+                    const [newX, newY] = getCoordsFromBoardSlotIdx(boardSlotIdx); // Merge it to the one that doesn't die
+
+                    let slideValue = Math.abs(oldY - newY);
+                    if (horizontal) slideValue =  Math.abs(oldX - newX);
+
                     // Killed Tile in merge slides is mapped to slide into position of death
                     slideMap[oldSlotIdxToKill!] = {
                         slideValue,
-                        slideIdx: newY
+                        slideIdx: horizontal ? newX : newY
                     }
 
                     const mergeValue = internalGameState.board[boardSlotIdx].value * 2
 
-
-
-
-
-
                     mergeMap[oldSlotIdxToMergeInto!] = { mergeValue: mergeValue, refIndex: internalGameState.board[boardSlotIdx]?.refIndex }; // Merge into
                     mergeMap[oldSlotIdxToKill!] = { mergeValue: -1, refIndex: internalGameState.board[potentialMergeSlotIdx]?.refIndex}; // Kill 
-
-
-
 
                     internalGameState.board[boardSlotIdx] = {  ...internalGameState.board[boardSlotIdx], value: mergeValue};
                     internalGameState.board[potentialMergeSlotIdx] = undefined;
@@ -115,10 +139,10 @@ export function slideBoardUp(list: BoardSlotIdx[], gameState: GameState) {
 
         //  3. Pack the col  (slide again)
         slideCol();
+        // TODO: Watch out for when merging and a second slide happens ... this might be buggy with the internal game state but we'll see
 
         // 4. Create SlideMap
-        //  TODO: hopefully a forEach on this one doesn't matter ... i don't think order matters here  ... actually its creating slidemap entries?
-        col.forEach((slotIdxAfter) => {
+        colOrRow.forEach((slotIdxAfter) => {
             const tileAfter = internalGameState.board[slotIdxAfter];
             if (!tileAfter) return;
 
@@ -128,13 +152,13 @@ export function slideBoardUp(list: BoardSlotIdx[], gameState: GameState) {
             });
 
             if (oldSlotIdx !== undefined) {
-                const [, oldY] = getCoordsFromBoardSlotIdx(oldSlotIdx);
-                const [, newY] = getCoordsFromBoardSlotIdx(slotIdxAfter);
-                const slideValue = Math.abs(oldY - newY);
+                const [oldX, oldY] = getCoordsFromBoardSlotIdx(oldSlotIdx);
+                const [newX, newY] = getCoordsFromBoardSlotIdx(slotIdxAfter);
+                const  slideValue = horizontal ? Math.abs(oldX - newX) : Math.abs(oldY - newY);
 
                 slideMap[oldSlotIdx] = {
                     slideValue,
-                    slideIdx: newY,
+                    slideIdx: horizontal ? newX : newY
                 };
             }
         });
@@ -142,240 +166,3 @@ export function slideBoardUp(list: BoardSlotIdx[], gameState: GameState) {
     
     return [slideMap, mergeMap, internalGameState];
 }
-
-
-// OLD ALGO
-
-// export function slideBoardDown(list: BoardSlotIdx[], gameState: GameState) {
-//     const slideMap: SlideMap = {};
-//     const mergedRecord: Record<RefIndex, boolean> = {
-//         tile0: false,
-//         tile1: false,
-//         tile2: false,
-//         tile3: false,
-//         tile4: false,
-//         tile5: false,
-//         tile6: false,
-//         tile7: false,
-//         tile8: false,
-//         tile9: false,
-//         tile10: false,
-//         tile11: false,
-//         tile12: false,
-//         tile13: false,
-//         tile14: false,
-//         tile15: false
-//     };
-
-//     // skip bottom row (index 3)
-//     for (let i = 0; i <= 2; i++) {
-//         const row = list.slice(i * 4, i * 4 + 4);
-
-//         row.forEach((boardSlotIdx) => {
-//             if (gameState.board[boardSlotIdx] !== undefined) {
-//                 const [x, y] = getCoordsFromBoardSlotIdx(boardSlotIdx);
-    
-//                 for (let j = 3; j > y; j--) {
-//                     const potentialSlotIdx = createBoardSlotIdx(x, j);
-    
-//                     if (!gameState.board[potentialSlotIdx]) {
-//                         const translateDiff = Math.max(y, j) - Math.min(y, j);
-//                         slideMap[boardSlotIdx] = { slideValue: translateDiff, slideIdx: j}; 
-
-//                         const existingTile = gameState.board[boardSlotIdx];
-                
-//                         gameState.board[potentialSlotIdx] = existingTile;
-//                         gameState.board[boardSlotIdx as BoardSlotIdx] = undefined;
-//                         break;
-//                     } else {
-//                         if (gameState.board[potentialSlotIdx].value === gameState.board[boardSlotIdx].value) {
-//                             if (mergedRecord[gameState.board[potentialSlotIdx].refIndex] === true) {
-//                                 break; // Only merge once per turn
-//                             }
-
-//                             // TODO: do the slide map, and tag as a merge
-//                             const translateDiff = Math.max(y, j) - Math.min(y, j);
-//                             const mergeValue = gameState.board[potentialSlotIdx].value + gameState.board[boardSlotIdx].value;
-
-//                             slideMap[boardSlotIdx] = {
-//                                 slideValue: translateDiff,
-//                                 slideIdx: j,
-//                                 merge: true,
-//                                 mergeValue
-//                             } 
-//                             const existingTile = gameState.board[boardSlotIdx];
-            
-//                             gameState.board[potentialSlotIdx] = { ...existingTile, value: mergeValue }; // update
-//                             mergedRecord[existingTile.refIndex] = true;
-//                             gameState.board[boardSlotIdx as BoardSlotIdx] = undefined; // empty old one
-//                             break;
-//                         }
-//                         else {
-//                             // Tile of different value, can't slide
-//                             break;
-//                         }
-//                     }
-//                 };
-//             }
-//         });
-//     }
-
-//     return slideMap;
-// }
-
-// export function slideBoardLeft(list: BoardSlotIdx[], gameState: GameState) {
-//     const slideMap: SlideMap = {};
-//     const mergedRecord: Record<RefIndex, boolean> = {
-//         tile0: false,
-//         tile1: false,
-//         tile2: false,
-//         tile3: false,
-//         tile4: false,
-//         tile5: false,
-//         tile6: false,
-//         tile7: false,
-//         tile8: false,
-//         tile9: false,
-//         tile10: false,
-//         tile11: false,
-//         tile12: false,
-//         tile13: false,
-//         tile14: false,
-//         tile15: false
-//     };
-
-//     // skips left-most row 
-//     for (let i = 3; i >= 1; i--) {
-//         const col = [0, 1, 2, 3].map(r => list[r * 4 + i]);
-        
-//         col.forEach((boardSlotIdx) => {
-//             if (gameState.board[boardSlotIdx] !== undefined) {
-                
-//                 const [x,y] = getCoordsFromBoardSlotIdx(boardSlotIdx);
-
-//                 for (let j = 0; j < x; j++) {
-//                     const potentialSlotIdx = createBoardSlotIdx(j, y);
-    
-//                     // If slot isn't taken 
-//                     if (!gameState.board[potentialSlotIdx]) {
-//                         const translateDiff = Math.max(x, j) - Math.min(x, j);
-//                         slideMap[boardSlotIdx] = { slideValue: translateDiff, slideIdx: j}; 
-    
-//                         // update state 
-//                         const existingTile = gameState.board[boardSlotIdx];
-                
-//                         gameState.board[potentialSlotIdx] = existingTile; // update
-//                         gameState.board[boardSlotIdx as BoardSlotIdx] = undefined; // empty old one
-//                         break;
-//                     } else {
-//                         if (gameState.board[potentialSlotIdx].value === gameState.board[boardSlotIdx].value) {
-//                             if (mergedRecord[gameState.board[potentialSlotIdx].refIndex] === true) {
-//                                 break; // Only merge once per turn
-//                             }
-
-//                             const translateDiff = Math.max(x, j) - Math.min(y, j);
-//                             const mergeValue = gameState.board[potentialSlotIdx].value + gameState.board[boardSlotIdx].value;
-
-//                             slideMap[boardSlotIdx] = {
-//                                 slideValue: translateDiff,
-//                                 slideIdx: j,
-//                                 merge: true,
-//                                 mergeValue
-//                             } 
-//                             const existingTile = gameState.board[boardSlotIdx];
-            
-//                             gameState.board[potentialSlotIdx] = { ...existingTile, value: mergeValue }; // update
-//                             mergedRecord[existingTile.refIndex] = true;
-//                             gameState.board[boardSlotIdx as BoardSlotIdx] = undefined; // empty old one
-//                             break;
-//                         }
-//                         else {
-//                             // Tile of different value, can't slide
-//                             break;
-//                         }
-//                     }
-//                 };
-//             }
-//         });
-//     }
-//     return slideMap;
-// }
-
-
-// export function slideBoardRight(list: BoardSlotIdx[], gameState: GameState) {
-//     const slideMap: SlideMap = {};
-//     const mergedRecord: Record<RefIndex, boolean> = {
-//         tile0: false,
-//         tile1: false,
-//         tile2: false,
-//         tile3: false,
-//         tile4: false,
-//         tile5: false,
-//         tile6: false,
-//         tile7: false,
-//         tile8: false,
-//         tile9: false,
-//         tile10: false,
-//         tile11: false,
-//         tile12: false,
-//         tile13: false,
-//         tile14: false,
-//         tile15: false
-//     };
-
-//     for (let i = 0; i <= 2; i++) {
-//         const col = [0, 1, 2, 3].map(r => list[r * 4 + i]);
-
-//         col.forEach((boardSlotIdx) => {
-//             if (gameState.board[boardSlotIdx] !== undefined) {
-               
-//                 const [x, y] = getCoordsFromBoardSlotIdx(boardSlotIdx);
-    
-//                 for (let j = 3; j > x; j--) {
-//                     const potentialSlotIdx = createBoardSlotIdx(j, y);
-    
-//                     if (!gameState.board[potentialSlotIdx]) {
-//                         const translateDiff = Math.max(x, j) - Math.min(x, j);
-//                         slideMap[boardSlotIdx] = { slideValue: translateDiff, slideIdx: j}; 
-
-//                         const existingTile = gameState.board[boardSlotIdx];
-                
-//                         gameState.board[potentialSlotIdx] = existingTile;
-//                         gameState.board[boardSlotIdx as BoardSlotIdx] = undefined;
-//                         break;
-//                     } else {
-//                         if (gameState.board[potentialSlotIdx].value === gameState.board[boardSlotIdx].value) {
-//                             if (mergedRecord[gameState.board[potentialSlotIdx].refIndex] === true) {
-//                                 break; // Only merge once per turn
-//                             }
-
-//                             // TODO: do the slide map, and tag as a merge
-//                             const translateDiff = Math.max(x, j) - Math.min(x, j);
-//                             const mergeValue = gameState.board[potentialSlotIdx].value + gameState.board[boardSlotIdx].value;
-
-//                             slideMap[boardSlotIdx] = {
-//                                 slideValue: translateDiff,
-//                                 slideIdx: j,
-//                                 merge: true,
-//                                 mergeValue
-//                             } 
-//                             const existingTile = gameState.board[boardSlotIdx];
-            
-//                             gameState.board[potentialSlotIdx] = { ...existingTile, value: mergeValue }; // update
-//                             mergedRecord[existingTile.refIndex] = true;
-//                             gameState.board[boardSlotIdx as BoardSlotIdx] = undefined; // empty old one
-//                             break;
-//                         }
-//                         else {
-//                             // Tile of different value, can't slide
-//                             break;
-//                         }
-//                     }
-//                 };
-//             }
-//         });
-//     }
-
-//     return slideMap;
-// }
-

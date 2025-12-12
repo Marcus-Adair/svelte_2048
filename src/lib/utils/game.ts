@@ -69,6 +69,8 @@ export function generateNewTileValue(){
 }
 // Generate random space roll (BoardSlotIdx) and new tile value
 export function generateNewTileForGameState(gameState: GameState): {boardSlotIdx: BoardSlotIdx, value: number} | undefined {
+
+    // TODO: maybe first scan the board and only generate a tile within free spots,
     let foundNonDupRoll = false;
     let x;
     let y;
@@ -85,7 +87,6 @@ export function generateNewTileForGameState(gameState: GameState): {boardSlotIdx
     }
 }
 
-// Returns if there's space left on the board or not for spawning a new tile
 export function spaceLeftOnBoard(gameState: GameState): boolean {
     let spaceLeft = false;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -95,22 +96,4 @@ export function spaceLeftOnBoard(gameState: GameState): boolean {
         }
     });
     return spaceLeft;
-}
-
-// For styling tiles
-export const TileClassMap: Record<number, string> = {
-	2: "bg-tile-2 text-tile-text-dark",
-	4: "bg-tile-4 text-tile-text-dark",
-	8: "bg-tile-8 text-tile-text",
-	16: "bg-tile-16 text-tile-text",
-	32: "bg-tile-32 text-tile-text",
-	64: "bg-tile-64 text-tile-text",
-	128: "bg-tile-128 text-tile-text",
-	256: "bg-tile-256 text-tile-text",
-	512: "bg-tile-512 text-tile-text",
-	1024: "bg-tile-1024 text-tile-text",
-	2048: "bg-tile-2048 text-tile-text",
-};
-export function getTileClassFromValue(value: number) {
-	return TileClassMap[value] ?? TileClassMap[2048];
 }

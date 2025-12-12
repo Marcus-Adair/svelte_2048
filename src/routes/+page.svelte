@@ -1,10 +1,11 @@
 <script lang="ts">
 	import Header from "$lib/components/Header.svelte";
     import { boardSlotIdxList, type BoardSlotIdx, type Coordinate, type GameState, type MergeMap, type RefIndex, type SlideMap } from "$lib/types";
-	import { createBoardSlotIdx, generateNewTileForGameState, getTileClassFromValue, getCoordsFromBoardSlotIdx, initNewGameState, spaceLeftOnBoard } from "$lib/utils/game";
+	import {  generateNewTileForGameState, getCoordsFromBoardSlotIdx, initNewGameState, spaceLeftOnBoard } from "$lib/utils/game";
 	import { onMount } from "svelte";
     import gsap from "gsap";
-	import { slideBoardUp } from "$lib/utils/movement";
+	import { slideBoard } from "$lib/utils/movement";
+	import { getTileColorClass } from "$lib/utils/ui";
 
     //  16 playable tiles to move and animate around
     let tile0: HTMLDivElement; let tile1: HTMLDivElement; let tile2: HTMLDivElement; let tile3: HTMLDivElement;
@@ -106,6 +107,7 @@
         const SCALE_ANIMATION_ANIMATION_EASE = "power2.inOut";
         const SCALE = 1.2;
 
+        let aTileMoved = false;
         const handleMove = (
             slideMap: SlideMap, 
             mergeMap: MergeMap,
@@ -114,7 +116,7 @@
         ) => {
             const slideTweens: GSAPTween[] = [];
             const mergeTweens: GSAPTween[] = [];
-            // console.log("INITIAL GAME STATE: ", gameState)
+            console.log("INITIAL GAME STATE: ", gameState)
 
             // Create slide animations
             Object.entries(slideMap).forEach(([slotIdxToSlideFrom, slideVals]) => {
@@ -129,6 +131,7 @@
                 // TODO: this could be a bad line
                 const slideValue = slideVals?.slideValue! * 110;
                 if (!slideValue) return;
+                if (slideValue > 0) aTileMoved = true;
 
                 // Push slide animation
                 slideTweens.push(
@@ -161,11 +164,16 @@
                             delay: SLIDE_ANIMATION_DURATION,
                             ease: SCALE_ANIMATION_ANIMATION_EASE,
                             paused: true,
+                            onComplete: () => {
+                                // Free up the div elt to be used
+                                refIdxClassMap[mergeRefIndex] = undefined;
+                                refIdxValueMap[mergeRefIndex] = undefined;
+                                // mergeTweens.push( gsap.to(tileEl, { x: 0, y: 0, duration: 0 }) ); // Reset back to 0,0
+                                mergeTweens.push(gsap.set(tileEl, {clearProps: "x,y"}));
+                            }
                         })
                     );
 
-                    refIdxClassMap[mergeRefIndex] = undefined;
-                    refIdxValueMap[mergeRefIndex] = undefined;
                 } else if (mergeValue > 0) {
                     mergeTweens.push(
                         gsap.to(tileEl, {
@@ -185,7 +193,8 @@
                         })
                     );
 
-                    refIdxClassMap[mergeRefIndex] = "bg-red-500!";
+                    // Update Tile's value and color
+                    refIdxClassMap[mergeRefIndex] = getTileColorClass(mergeValue);
                     refIdxValueMap[mergeRefIndex] = mergeValue;
                 }
             });
@@ -196,98 +205,109 @@
 
             // Update state
             gameState = newGameState;
-            // console.log("New gameState is: ", gameState)
         };
         // -------------- //
 
         if (event.key === 'ArrowUp') {
-            const [slideMap, mergeMap, newGameState] = slideBoardUp(boardSlotIdxList, $state.snapshot(gameState));
-
+            const [slideMap, mergeMap, newGameState] = slideBoard("up", boardSlotIdxList, $state.snapshot(gameState));
             handleMove(
                 slideMap as SlideMap,
                 mergeMap as MergeMap,
                 newGameState as GameState,
                 (slideValue) => ({ y: `-=${slideValue}` })
             );
-        } 
-        // else if (event.key === 'ArrowDown') {
-        //     handleMove(
-        //         slideBoardDown(boardSlotIdxList, $state.snapshot(gameState)),
-        //         ([curX, _], slideIdx) => createBoardSlotIdx(curX, slideIdx),
-        //         (slideValue) => ({ y: `+=${slideValue}` })
-        //     );
-        // } else if (event.key === 'ArrowLeft') {
-        //     handleMove(
-        //         slideBoardLeft(boardSlotIdxList, $state.snapshot(gameState)),
-        //         ([_, curY], slideIdx) => createBoardSlotIdx(slideIdx, curY),
-        //         (slideValue) => ({ x: `-=${slideValue}` })
-        //     );
-        // } else if (event.key === 'ArrowRight') {
-        //     handleMove(
-        //         slideBoardRight(boardSlotIdxList, $state.snapshot(gameState)),
-        //         ([_, curY], slideIdx) => createBoardSlotIdx(slideIdx, curY),
-        //         (slideValue) => ({ x: `+=${slideValue}` })
-        //     );
-        // }
-
-
+        }
+        else if (event.key === 'ArrowDown') {
+            const [slideMap, mergeMap, newGameState] = slideBoard("down", boardSlotIdxList, $state.snapshot(gameState));
+            handleMove(
+                slideMap as SlideMap,
+                mergeMap as MergeMap,
+                newGameState as GameState,
+                (slideValue) => ({ y: `+=${slideValue}` })
+            );
+        }
+        else if (event.key === 'ArrowLeft') {
+            const [slideMap, mergeMap, newGameState] = slideBoard("left", boardSlotIdxList, $state.snapshot(gameState));
+            console.log("calling handleMove for Left!!");
+            handleMove(
+                slideMap as SlideMap,
+                mergeMap as MergeMap,
+                newGameState as GameState,
+                (slideValue) => ({ x: `-=${slideValue}` })
+            );
+        }
+        else if (event.key === 'ArrowRight') {
+            const [slideMap, mergeMap, newGameState] = slideBoard("right", boardSlotIdxList, $state.snapshot(gameState));
+            console.log("calling handleMove for Right!!");
+            handleMove(
+                slideMap as SlideMap,
+                mergeMap as MergeMap,
+                newGameState as GameState,
+                (slideValue) => ({ x: `+=${slideValue}` })
+            );
+        }
     
         // TODO: update score ...
 
 
-
         // Spawn in new tile
         // TODO: this needs to check if valid move instead** ... aka there might be no space left, but you can still slide .... 
-        // if (spaceLeftOnBoard(gameState)) {
-        //     const newTileVals = generateNewTileForGameState(gameState)
+        
+        if (aTileMoved) {
+            const newTileVals = generateNewTileForGameState(gameState)
 
-        //     for (const [tileRefIdx, tileClass] of Object.entries(refIdxClassMap)) {
+            for (const [tileRefIdx, tileClass] of Object.entries(refIdxClassMap)) {
 
-        //         // Find first unused divElt
-        //         if (tileClass === undefined) {
-        //             const unusedRefIndex = tileRefIdx as RefIndex;
-        //             const value = newTileVals?.value;
+                // Find first unused divElt
+                if (tileClass === undefined) {
+                    const unusedRefIndex = tileRefIdx as RefIndex;
+                    const value = newTileVals?.value;
 
-        //             // Set Tile in gameState
-        //             gameState.board[newTileVals?.boardSlotIdx as BoardSlotIdx] = { refIndex: unusedRefIndex, value: value as number }
+                    // Set Tile in gameState
+                    gameState.board[newTileVals?.boardSlotIdx as BoardSlotIdx] = { refIndex: unusedRefIndex, value: value as number }
 
-        //             // Style
-        //             refIdxClassMap[unusedRefIndex] = `${value === 4 ? "bg-tile-4" : "bg-tile-2"}`
-        //             refIdxValueMap[unusedRefIndex] = newTileVals?.value;
+                    // Style
+                    refIdxClassMap[unusedRefIndex] = `${value === 4 ? "bg-tile-4" : "bg-tile-2"}`
+                    refIdxValueMap[unusedRefIndex] = newTileVals?.value;
 
-        //              // Animate into position
-        //             const [curX, curY] = getCoordsFromBoardSlotIdx(newTileVals?.boardSlotIdx as BoardSlotIdx);
-        //             const xTrans = curX * 110;
-        //             const yTrans = curY * 110;
-        //             const tileToAnimate = tiles[unusedRefIndex]
-        //             tl.to(
-        //                 tileToAnimate, {
-        //                 x: xTrans,
-        //                 y: yTrans,
-        //                 duration: 0
-        //             });
-        //             tl.fromTo(tileToAnimate, {
-        //                 scale: 0
-        //             },
-        //             {
-        //                 scale: SCALE,
-        //                 duration: 0.2,
-        //                 ease: SCALE_ANIMATION_ANIMATION_EASE
-        //             });
-        //             tl.to(tileToAnimate, {
-        //                 scale: 1,
-        //                 duration: 0.1,
-        //                 ease: SCALE_ANIMATION_ANIMATION_EASE
-        //             })
-        //             break;
-        //         }
-        //     }
-        // }
-        // else {
-        //     console.log("no space left...... END THE GAME!!!");
-        //     // TODO: show game over modal, save best score, etc.
-        // }
+                     // Animate into position
+                    const [curX, curY] = getCoordsFromBoardSlotIdx(newTileVals?.boardSlotIdx as BoardSlotIdx);
+                    const xTrans = curX * 110;
+                    const yTrans = curY * 110;
+                    const tileToAnimate = tiles[unusedRefIndex]
+                    const tl = gsap.timeline();
+                    tl.to(
+                        tileToAnimate, {
+                        x: xTrans,
+                        y: yTrans,
+                        duration: 0
+                    });
+                    tl.fromTo(tileToAnimate, {
+                        scale: 0
+                    },
+                    {
+                        scale: SCALE,
+                        duration: 0.2,
+                        ease: SCALE_ANIMATION_ANIMATION_EASE
+                    });
+                    tl.to(tileToAnimate, {
+                        scale: 1,
+                        duration: 0.1,
+                        ease: SCALE_ANIMATION_ANIMATION_EASE
+                    })
+                    break;
+                }
+            }
+        }
         isMoving = false;
+        console.log("New gameState is: ", gameState)
+        console.log("refIdxClassMap is: ", refIdxClassMap)
+        console.log("refIdxValueMap is: ", refIdxValueMap)
+
+
+        if (spaceLeftOnBoard(gameState)){
+            console.log("TODO: check if game over or not ...")
+        }
     }
 </script>
 
