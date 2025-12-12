@@ -89,7 +89,7 @@ export function slideBoard(direction: "up" | "down" | "left" | "right", list: Bo
         slideCol();
 
         // 2. merge the col 
-        for (let i = traversePattern.start; reverseOp ? i > traversePattern.end : i < traversePattern.end; i += traversePattern.step) {
+        for (let i = traversePattern.start; reverseOp ? i >= traversePattern.end : i <= traversePattern.end; i += traversePattern.step) {
             const boardSlotIdx = colOrRow[i] as BoardSlotIdx;
             if (internalGameState.board[boardSlotIdx] !== undefined) {
                 const [x, y] = getCoordsFromBoardSlotIdx(boardSlotIdx);
@@ -137,11 +137,10 @@ export function slideBoard(direction: "up" | "down" | "left" | "right", list: Bo
             }
         }
 
-        //  3. Pack the col  (slide again)
+        //  3. Pack the col
         slideCol();
-        // TODO: Watch out for when merging and a second slide happens ... this might be buggy with the internal game state but we'll see
 
-        // 4. Create SlideMap
+        // 4. Create SlideMap for animations
         colOrRow.forEach((slotIdxAfter) => {
             const tileAfter = internalGameState.board[slotIdxAfter];
             if (!tileAfter) return;
