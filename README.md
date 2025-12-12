@@ -1,5 +1,7 @@
 # Svelte 2048
 
+Hello world!
+
 TODO: Write README.md
 
 ## Developing

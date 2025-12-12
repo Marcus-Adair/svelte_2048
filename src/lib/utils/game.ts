@@ -1,41 +1,24 @@
 import type { BoardSlotIdx, GameState, Coordinate } from "$lib/types";
 // ----------------------------------- //
 
+// Helpers for indexing into the game board
 export function createBoardSlotIdx( x: number, y: number): BoardSlotIdx {
     return `${x}${y}` as BoardSlotIdx;
 }
-export function getCoordsFromBoardSlotIdx(boardSlotIdx: BoardSlotIdx): [number, number] {
+export function getCoordsFromBoardSlotIdx(boardSlotIdx: BoardSlotIdx): [Coordinate, Coordinate] {
     const x = Number(boardSlotIdx[0]);
     const y = Number(boardSlotIdx[1]);
-    return [x,y]
+    return [x as Coordinate, y as Coordinate]
 }
 
-export function initNewGameState() {
+// Returns initialized GameState obj
+export function initNewGameState(): GameState {
     const newGameState: GameState = {
         board: {
-            // Row 0
-            "00": undefined,
-            "01": undefined,
-            "02": undefined,
-            "03": undefined,
-          
-            // Row 1
-            "10": undefined,
-            "11": undefined,
-            "12": undefined,
-            "13": undefined,
-    
-            // Row 2
-            "20": undefined,
-            "21": undefined,
-            "22": undefined,
-            "23": undefined,
-    
-            // Row 3
-            "30": undefined,
-            "31": undefined,
-            "32": undefined,
-            "33": undefined,
+            "00": undefined, "01": undefined, "02": undefined, "03": undefined, // Row 0
+            "10": undefined, "11": undefined, "12": undefined, "13": undefined,// Row 1
+            "20": undefined, "21": undefined, "22": undefined, "23": undefined, // Row 2
+            "30": undefined, "31": undefined, "32": undefined, "33": undefined, // Row 3
         },
         score: 0,
         step: 0,
@@ -44,11 +27,14 @@ export function initNewGameState() {
     // Generate/set first Tile
     const x = Math.floor(Math.random() * 4) as Coordinate;
     const y = Math.floor(Math.random() * 4) as Coordinate;
+    // const x = 0;
+    // const y = 0;
 
     const firstStartingVal = generateNewTileValue();
 
     newGameState.board[createBoardSlotIdx(x,y)] = {
         value: firstStartingVal,
+        // value: 2,
         refIndex: "tile0"
     };
 
@@ -61,13 +47,15 @@ export function initNewGameState() {
     while (!foundNonDupRoll) {
         x2  = Math.floor(Math.random() * 4) as Coordinate;
         y2 = Math.floor(Math.random() * 4) as Coordinate;
-
+        // x2  = 3;
+        // y2 = 0;
         if (createBoardSlotIdx(x,y) !== createBoardSlotIdx(x2,y2)){
             foundNonDupRoll = true
         }
     }
     newGameState.board[createBoardSlotIdx(x2 as number,y2 as number)] = {
         value: secondStartingVal,
+        // value: 2,
         refIndex: "tile1"
     };
 
@@ -75,6 +63,37 @@ export function initNewGameState() {
 }
 
 
+// Randomly generate 2 or 4 with a bias
 export function generateNewTileValue(){
     return  Math.random() < 0.6 ? 2 : 4;
+}
+// Generate random space roll (BoardSlotIdx) and new tile value
+export function generateNewTileForGameState(gameState: GameState): {boardSlotIdx: BoardSlotIdx, value: number} | undefined {
+
+    // TODO: maybe first scan the board and only generate a tile within free spots,
+    let foundNonDupRoll = false;
+    let x;
+    let y;
+    while (!foundNonDupRoll) {
+        x  = Math.floor(Math.random() * 4) as Coordinate;
+        y = Math.floor(Math.random() * 4) as Coordinate;
+
+        const boardSlotIdx = createBoardSlotIdx(x,y);
+
+        if (gameState.board[boardSlotIdx] === undefined){
+            foundNonDupRoll = true
+            return {boardSlotIdx, value: generateNewTileValue()};
+        }
+    }
+}
+
+export function spaceLeftOnBoard(gameState: GameState): boolean {
+    let spaceLeft = false;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    Object.entries(gameState.board).forEach(([_, boardSlot]) => {
+        if (boardSlot === undefined){
+            spaceLeft = true;
+        }
+    });
+    return spaceLeft;
 }
