@@ -1,48 +1,50 @@
 <script lang="ts">
 	import Header from "$lib/components/Header.svelte";
     import { boardSlotIdxList, type BoardSlotIdx, type Coordinate, type GameState, type MergeMap, type RefIndex, type SlideMap } from "$lib/types";
-	import {  generateNewTileForGameState, getCoordsFromBoardSlotIdx, initNewGameState, spaceLeftOnBoard } from "$lib/utils/game";
+	import {  canSlideTile, generateNewTileForGameState, getCoordsFromBoardSlotIdx, initNewGameState, spaceLeftOnBoard } from "$lib/utils/game";
 	import { onMount } from "svelte";
     import gsap from "gsap";
 	import { slideBoard } from "$lib/utils/movement";
 	import { getTileColorClass } from "$lib/utils/ui";
+	import { NEW_GAME_DELAY, SCALE, SCALE_ANIMATION_ANIMATION_EASE, SCALE_ANIMATION_DURATION_DOWN, SCALE_ANIMATION_DURATION_KILL, SCALE_ANIMATION_DURATION_UP, SCORE_EASE, SCORE_FADE_DURATION, SCORE_XY_TRANS, SLIDE_ANIMATION_ANIMATION_EASE, SLIDE_ANIMATION_DURATION, SPAWN_DELAY, TRANSLATION_WIDTH, TURN_LOCK_TIME } from "$lib/consts";
+	import Dialog, { openGameOverDialog } from "$lib/components/GameOverDialog.svelte";
+	import GameOverDialog from "$lib/components/GameOverDialog.svelte";
 
     //  16 playable tiles to move and animate around
     let tile0: HTMLDivElement; let tile1: HTMLDivElement; let tile2: HTMLDivElement; let tile3: HTMLDivElement;
     let tile4: HTMLDivElement;let tile5: HTMLDivElement; let tile6: HTMLDivElement; let tile7: HTMLDivElement;
     let tile8: HTMLDivElement; let tile9: HTMLDivElement; let tile10: HTMLDivElement; let tile11: HTMLDivElement;
     let tile12: HTMLDivElement; let tile13: HTMLDivElement; let tile14: HTMLDivElement; let tile15: HTMLDivElement;
-
-    // Maps refIdx to class .. TODO: USE THIS TO COLOR TILES!!! i think 
     const initRefIdxMap = {
         tile0: undefined, tile1: undefined, tile2: undefined, tile3: undefined,
         tile4: undefined, tile5: undefined, tile6: undefined, tile7: undefined,
         tile8: undefined, tile9: undefined, tile10: undefined, tile11: undefined,
         tile12: undefined, tile13: undefined, tile14: undefined, tile15: undefined  
     }
+    // Maps for Divs for UI vals/styling
     let refIdxClassMap = $state<Record<RefIndex, string | undefined>>(initRefIdxMap);
     let refIdxValueMap = $state<Record<RefIndex, number | undefined>>(initRefIdxMap);
+
+    let scoreAnimationValue = $state(0);
+    let showScoreAnimationValue = $state(false);
+    let animationValueSpan: HTMLSpanElement | undefined = $state(undefined);
 
     // MAIN GAME STATE
     let gameState = $state<GameState>(initNewGameState());
 
     // Helper Fns
     function initNewGameUI(newGamePressed?: boolean) {
-        const tiles = {
-            tile0,
-            tile1
-        };
+        const tiles = { tile0, tile1 };
         refIdxClassMap = initRefIdxMap;
-        refIdxValueMap = initRefIdxMap
-        ;
+        refIdxValueMap = initRefIdxMap;
         Object.entries(tiles).forEach(([tileRefIdx, tile]) => {
             Object.entries(gameState.board).forEach(([boardSlotIdx, boardSlot]) => {
 
-                // If Tile in boardSlot, and refIndex matches
+                // Find referenced tile (div)
                 if (boardSlot?.refIndex === tileRefIdx){
                     const [curX, curY] = getCoordsFromBoardSlotIdx(boardSlotIdx as BoardSlotIdx);
-                    const xTrans = curX * 110;
-                    const yTrans = curY * 110;
+                    const xTrans = curX * TRANSLATION_WIDTH;
+                    const yTrans = curY * TRANSLATION_WIDTH;
 
                     refIdxClassMap[tileRefIdx] =  `${boardSlot.value === 4 ? "bg-tile-4" : "bg-tile-2"}`
                     refIdxValueMap[tileRefIdx] = gameState.board[boardSlotIdx as BoardSlotIdx]?.value
@@ -51,26 +53,23 @@
                     if (newGamePressed) {
                         tl.to(tile, {
                             scale: 0,
-                            duration: 0.115,
-                            ease: "power4.out"
+                            duration: SCALE_ANIMATION_DURATION_KILL,
+                            ease: SCALE_ANIMATION_ANIMATION_EASE
                         });
-                    } else {
-                        tl.to(tile, { scale: 0, duration: 0  });
-                    }
+                    } else { tl.to(tile, { scale: 0, duration: 0  }); }
 
-                    // TODO: put this to a function ... 
+                    // Move to place and POP in 
                     tl.to( tile, { x: xTrans,  y: yTrans, duration: 0 });
                     tl.to(tile, {
-                        delay: newGamePressed ? 0 : 0.15,
-                        scale: 1.1,
-                        duration: 0.07,
-                        ease: "power4.out"
+                        delay: newGamePressed ? 0 : NEW_GAME_DELAY,
+                        scale: SCALE,
+                        duration: SCALE_ANIMATION_DURATION_UP,
+                        ease: SCALE_ANIMATION_ANIMATION_EASE
                     });
                     tl.to(tile, {
-                        delay: newGamePressed ? 0 : 0.075,
                         scale: 1,
-                        duration: 0.07,
-                        ease: "power4.out"
+                        duration: SCALE_ANIMATION_DURATION_DOWN,
+                        ease: SCALE_ANIMATION_ANIMATION_EASE
                     });
                 }
             })
@@ -82,30 +81,27 @@
     });
 
     function startNewGame() {
-        gameState = initNewGameState();
+        gameState = initNewGameState(gameState.best);
         initNewGameUI(true);
     }
 
+    let gameOverDialogIsOpen = $state(false);
     let isMoving = $state(false);
 
     function handleKeydown(event: KeyboardEvent) {
         if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
         event.preventDefault();
         if (isMoving) return;
+        if (gameOverDialogIsOpen) return;
 
         isMoving = true;
 
-        const tiles = {
-            tile0, tile1, tile2, tile3, tile4, tile5, tile6, tile7,
-            tile8, tile9, tile10, tile11, tile12, tile13, tile14,tile15,
-        };
+        setTimeout(() => {
+            isMoving = false;
+        }, TURN_LOCK_TIME * 1000);
 
-        // Animation config!
-        const SLIDE_ANIMATION_DURATION = 0.14;
-        const SLIDE_ANIMATION_ANIMATION_EASE = "power2.inOut";
-        const SCALE_ANIMATION_DURATION = 0.1;
-        const SCALE_ANIMATION_ANIMATION_EASE = "power2.inOut";
-        const SCALE = 1.2;
+        const tiles = { tile0, tile1, tile2, tile3, tile4, tile5, tile6, tile7, tile8, tile9, tile10, tile11, tile12, tile13, tile14,tile15 };
+
 
         let aTileMoved = false;
         const handleMove = (
@@ -116,23 +112,22 @@
         ) => {
             const slideTweens: GSAPTween[] = [];
             const mergeTweens: GSAPTween[] = [];
-            console.log("INITIAL GAME STATE: ", gameState)
 
             // Create slide animations
             Object.entries(slideMap).forEach(([slotIdxToSlideFrom, slideVals]) => {
                 const boardSlotIdx = slotIdxToSlideFrom as BoardSlotIdx;
                 const boardSlot = gameState.board[boardSlotIdx];
                 if (!boardSlot) return;
-                // Find tileRef
                 const tileEl = tiles[boardSlot.refIndex];
                 if (!tileEl) return;
 
-
-                const slideValue = slideVals?.slideValue! * 110;
+                const slideValue = slideVals?.slideValue! * TRANSLATION_WIDTH;
                 if (!slideValue) return;
                 if (slideValue > 0) aTileMoved = true;
 
-                // Push slide animation
+                // Push slide animations
+                const mergeVal = mergeMap[slotIdxToSlideFrom]?.mergeValue
+                if (mergeVal === -1) return; // Don't let killed tiles get slide animations .... TODO: this could be better 
                 slideTweens.push(
                     gsap.to(tileEl, {
                         ...getAnimationDirection(slideValue),
@@ -159,7 +154,7 @@
                     mergeTweens.push(
                         gsap.to(tileEl, {
                             scale: 0,
-                            duration: SCALE_ANIMATION_DURATION,
+                            duration: SCALE_ANIMATION_DURATION_DOWN,
                             delay: SLIDE_ANIMATION_DURATION,
                             ease: SCALE_ANIMATION_ANIMATION_EASE,
                             paused: true,
@@ -175,18 +170,43 @@
                     mergeTweens.push(
                         gsap.to(tileEl, {
                             scale: SCALE,
-                                duration: 0.05,
-                                ease: SCALE_ANIMATION_ANIMATION_EASE,
-                                delay: SLIDE_ANIMATION_DURATION,
-                                paused: true,
+                            duration: SCALE_ANIMATION_DURATION_UP,
+                            ease: SCALE_ANIMATION_ANIMATION_EASE,
+                            delay: SLIDE_ANIMATION_DURATION,
+                            paused: true,
+                            onComplete: () => {
+                                gsap.to(tileEl, {
+                                    scale: 1,
+                                    duration: SCALE_ANIMATION_DURATION_DOWN,
+                                    ease: SCALE_ANIMATION_ANIMATION_EASE,
+                                })
+                            }
+                        })
+                    );
+
+                    // Score
+                    mergeTweens.push(
+                        gsap.to(animationValueSpan!, {
+                            ...SCORE_XY_TRANS,
+                            duration: SCORE_FADE_DURATION,
+                            paused: true,
+                            onStart: () => { { scoreAnimationValue = mergeValue; showScoreAnimationValue = true }},
+                            onComplete: () => {
+                                showScoreAnimationValue = false
+                                gsap.to(animationValueSpan!, { y: 0, duration: 0})
+                            }
                         })
                     );
                     mergeTweens.push(
-                        gsap.to(tileEl, {
-                            scale: 1,
-                                duration: 0.19,
-                                ease: SCALE_ANIMATION_ANIMATION_EASE,
-                                paused: true,
+                        gsap.fromTo(animationValueSpan!,
+                        { opacity: 1 },
+                        {
+                            opacity: 0,
+                            duration: SCORE_FADE_DURATION,
+                            ease: SCORE_EASE,
+                            paused: true,
+                            onStart: () => { { showScoreAnimationValue = true }},
+                            onComplete: () => { showScoreAnimationValue = false },
                         })
                     );
 
@@ -225,7 +245,6 @@
         }
         else if (event.key === 'ArrowLeft') {
             const [slideMap, mergeMap, newGameState] = slideBoard("left", boardSlotIdxList, $state.snapshot(gameState));
-            console.log("calling handleMove for Left!!");
             handleMove(
                 slideMap as SlideMap,
                 mergeMap as MergeMap,
@@ -235,7 +254,6 @@
         }
         else if (event.key === 'ArrowRight') {
             const [slideMap, mergeMap, newGameState] = slideBoard("right", boardSlotIdxList, $state.snapshot(gameState));
-            console.log("calling handleMove for Right!!");
             handleMove(
                 slideMap as SlideMap,
                 mergeMap as MergeMap,
@@ -243,11 +261,9 @@
                 (slideValue) => ({ x: `+=${slideValue}` })
             );
         }
-    
-        // TODO: update score ...
-        
+            
+         // Spawn in new tile
         if (aTileMoved) {
-             // Spawn in new tile
             const newTileVals = generateNewTileForGameState(gameState)
             for (const [tileRefIdx, tileClass] of Object.entries(refIdxClassMap)) {
 
@@ -265,40 +281,44 @@
 
                      // Animate into position
                     const [curX, curY] = getCoordsFromBoardSlotIdx(newTileVals?.boardSlotIdx as BoardSlotIdx);
-                    const xTrans = curX * 110;
-                    const yTrans = curY * 110;
+                    const xTrans = curX * TRANSLATION_WIDTH;
+                    const yTrans = curY * TRANSLATION_WIDTH;
                     const tileToAnimate = tiles[unusedRefIndex]
+
                     const tl = gsap.timeline();
-                    tl.to(
-                        tileToAnimate, {
+                    tl.to( tileToAnimate, {
                         x: xTrans,
                         y: yTrans,
-                        duration: 0
+                        duration: 0,
+                        delay: SPAWN_DELAY
                     });
-                    tl.fromTo(tileToAnimate, {
-                        scale: 0
-                    },
+                    tl.fromTo(tileToAnimate, { scale: 0},
                     {
                         scale: SCALE,
-                        duration: 0.2,
+                        duration: SCALE_ANIMATION_DURATION_UP,
                         ease: SCALE_ANIMATION_ANIMATION_EASE
                     });
                     tl.to(tileToAnimate, {
                         scale: 1,
-                        duration: 0.1,
+                        duration: SCALE_ANIMATION_DURATION_DOWN,
                         ease: SCALE_ANIMATION_ANIMATION_EASE
                     })
                     break;
                 }
             }
         }
-        isMoving = false;
+        // isMoving = false;
         // console.log("New gameState is: ", gameState)
         // console.log("refIdxClassMap is: ", refIdxClassMap)
         // console.log("refIdxValueMap is: ", refIdxValueMap)
 
-        if (spaceLeftOnBoard(gameState)){
-            console.log("TODO: check if game over or not ...")
+        if (!spaceLeftOnBoard(gameState)){
+            console.log("NO SPACE ON BOARD!!!!")
+            if (!(canSlideTile(gameState))) {
+                console.log("CANNOT SLIDE TILE ANYMORE!!!")
+                gameOverDialogIsOpen = true;
+                openGameOverDialog();
+            }
         }
     }
 </script>
@@ -308,11 +328,11 @@
 
 <!-- 2048 -->
 <div> 
-    <Header score={gameState.score} best={-1} onStartNewGameClick={startNewGame}/>
+    <Header bind:animationValueSpan={animationValueSpan!} score={gameState.score} best={gameState.best} onStartNewGameClick={startNewGame} {scoreAnimationValue} {showScoreAnimationValue}/>
 
     <!-- 450px is the width of the board -->
     <main class="flex justify-center p-4 my-1.5 ">
-        <div id="game-board" class="grid grid-cols-4 gap-2.5 rounded-xl bg-board p-2.5 relative">
+        <div id="game-board" class="grid grid-cols-4 gap-2.5 rounded-xl bg-board p-2.5 relative shadow-sm">
             {#each Array(16)}
                 <div class="rounded-xl bg-tile-empty h-[100px] w-[100px] shadow-sm"></div>
             {/each}
@@ -338,15 +358,23 @@
                 </div>
             </div>
         </div>
+        <GameOverDialog score={gameState.score} onClose={() => { gameOverDialogIsOpen = false; startNewGame();}}/>
     </main>
     
     <footer class="flex justify-center">
-        <div class="flex w-[450px]">
+        <div class="flex flex-col w-[450px]  gap-2">
             <span class="px-1">
                 <span class="font-extrabold text-lg underline underline-offset-3 decoration-2 leading-tight">HOW TO PLAY:</span> Use your <span class="font-bold">arrow keys</span>
                 to move the tiles. Tiles with the <span class="font-bold">same number merge into one</span> tile when they touch.
                 Add them up to reach <span class="font-bold">2048</span>!
             </span>
+
+            <!-- <div class="relative mt-13.5 mb-2 translate-x-86">
+                <kbd class="absolute text-2xl bottom-9.5 left-9 border px-2 rounded-md hover:bg-tile-empty/30 cursor-default transition-colors">&uarr;</kbd>
+                <kbd class="absolute text-2xl bottom-0 left-0 border px-2 rounded-md hover:bg-tile-empty/30 cursor-default transition-colors">&larr;</kbd>
+                <kbd class="absolute text-2xl bottom-0 left-9 border px-2 rounded-md hover:bg-tile-empty/30 cursor-default transition-colors">&darr;</kbd>
+                <kbd class="absolute text-2xl bottom-0 left-18 border px-2 rounded-md hover:bg-tile-empty/30 cursor-default transition-colors">&rarr;</kbd>
+            </div> -->
         </div>
     </footer>
 </div>

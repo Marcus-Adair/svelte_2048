@@ -127,6 +127,10 @@ export function slideBoard(direction: "up" | "down" | "left" | "right", list: Bo
                     }
 
                     const mergeValue = internalGameState.board[boardSlotIdx].value * 2
+                    internalGameState.score += mergeValue;
+                    if (internalGameState.score > internalGameState.best) {
+                        internalGameState.best = internalGameState.score;
+                    }
 
                     mergeMap[oldSlotIdxToMergeInto!] = { mergeValue: mergeValue, refIndex: internalGameState.board[boardSlotIdx]?.refIndex }; // Merge into
                     mergeMap[oldSlotIdxToKill!] = { mergeValue: -1, refIndex: internalGameState.board[potentialMergeSlotIdx]?.refIndex}; // Kill 

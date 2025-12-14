@@ -12,7 +12,7 @@ export function getCoordsFromBoardSlotIdx(boardSlotIdx: BoardSlotIdx): [Coordina
 }
 
 // Returns initialized GameState obj
-export function initNewGameState(): GameState {
+export function initNewGameState(best?: number): GameState {
     const newGameState: GameState = {
         board: {
             "00": undefined, "01": undefined, "02": undefined, "03": undefined, // Row 0
@@ -22,19 +22,17 @@ export function initNewGameState(): GameState {
         },
         score: 0,
         step: 0,
+        best: best ?? 0,
     } 
 
     // Generate/set first Tile
     const x = Math.floor(Math.random() * 4) as Coordinate;
     const y = Math.floor(Math.random() * 4) as Coordinate;
-    // const x = 0;
-    // const y = 0;
-
+  
     const firstStartingVal = generateNewTileValue();
 
     newGameState.board[createBoardSlotIdx(x,y)] = {
         value: firstStartingVal,
-        // value: 2,
         refIndex: "tile0"
     };
 
@@ -47,15 +45,12 @@ export function initNewGameState(): GameState {
     while (!foundNonDupRoll) {
         x2  = Math.floor(Math.random() * 4) as Coordinate;
         y2 = Math.floor(Math.random() * 4) as Coordinate;
-        // x2  = 3;
-        // y2 = 0;
         if (createBoardSlotIdx(x,y) !== createBoardSlotIdx(x2,y2)){
             foundNonDupRoll = true
         }
     }
     newGameState.board[createBoardSlotIdx(x2 as number,y2 as number)] = {
         value: secondStartingVal,
-        // value: 2,
         refIndex: "tile1"
     };
 
@@ -89,11 +84,34 @@ export function generateNewTileForGameState(gameState: GameState): {boardSlotIdx
 
 export function spaceLeftOnBoard(gameState: GameState): boolean {
     let spaceLeft = false;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    Object.entries(gameState.board).forEach(([_, boardSlot]) => {
+    Object.entries(gameState.board).forEach(([, boardSlot]) => {
         if (boardSlot === undefined){
             spaceLeft = true;
         }
     });
     return spaceLeft;
+}
+
+export function canSlideTile(gameState: GameState): boolean {
+    for (let x = 0; x < 4; x++) {
+        for (let y = 0; y < 4; y++) {
+            const value = gameState.board[`${x}${y}` as BoardSlotIdx]?.value;
+            if (!value) return true; // Empty spot (can slide)
+
+            const adjacentNeighbors: [number, number][] = [
+                [x - 1, y],
+                [x + 1, y],
+                [x, y - 1],
+                [x, y + 1],
+            ];
+
+            for (const [nX, nY] of adjacentNeighbors) {
+                if (nX < 0 || nX > 3 || nY < 0 || nY > 3) continue;
+
+                const neighborValue = gameState.board[`${nX}${nY}` as BoardSlotIdx]?.value;
+                if (neighborValue === value) return true; // If can merge with neighbor
+            }
+        }
+    }
+    return false;
 }

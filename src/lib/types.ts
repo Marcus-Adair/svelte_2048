@@ -27,7 +27,7 @@ export interface GameState {
     board: Record<BoardSlotIdx, Tile | undefined>;
     step: number;
     score: number;
-    // best: number;
+    best: number;
 }
 
 export type SlideMap = Record<
