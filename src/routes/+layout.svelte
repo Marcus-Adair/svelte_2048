@@ -12,7 +12,7 @@
 </svelte:head>
 
 <ThemeWatcher />
-<div class="relative min-w-[650px] h-full">
+<div class="relative min-w-[650px]">
 	<a
 		class="absolute left-2 z-50 hover:bg-button/10 px-4 py-2 rounded-lg"
 		href="https://github.com/Marcus-Adair/svelte_2048"
