@@ -1,15 +1,37 @@
 <script lang="ts">
+	import type { BestIndex, ScoreIndex } from "$lib/types";
 	import Button from "./Button.svelte";
 
     interface Props {
         score: number;
         best: number;
         onStartNewGameClick: () => void;
-        scoreAnimationValue: number;
-        showScoreAnimationValue: boolean;
-        animationValueSpan: HTMLSpanElement;
+        score0: HTMLSpanElement;
+        score1: HTMLSpanElement;
+        score2: HTMLSpanElement;
+        score3: HTMLSpanElement;
+        score4: HTMLSpanElement;
+        score5: HTMLSpanElement;
+        scoreIdxClassMap: Record<ScoreIndex, string | undefined>;
+        scoreIdxValueMap: Record<ScoreIndex, number | undefined>;
+        best0: HTMLSpanElement;
+        best1: HTMLSpanElement;
+        best2: HTMLSpanElement;
+        best3: HTMLSpanElement;
+        best4: HTMLSpanElement;
+        best5: HTMLSpanElement;
+        bestIdxClassMap: Record<BestIndex, string | undefined>;
+        bestIdxValueMap: Record<BestIndex, number | undefined>;
     }
-    let { score, best, onStartNewGameClick, scoreAnimationValue, showScoreAnimationValue, animationValueSpan = $bindable() }:Props = $props();
+    let {
+        score0 = $bindable(), score1 = $bindable(), score2 = $bindable(), score3 = $bindable(), score4 = $bindable(), score5 = $bindable(),
+        scoreIdxClassMap, scoreIdxValueMap,
+        score,
+        best0 = $bindable(), best1 = $bindable(), best2 = $bindable(), best3 = $bindable(), best4 = $bindable(), best5 = $bindable(),
+        bestIdxClassMap, bestIdxValueMap,
+        best,
+        onStartNewGameClick 
+    }:Props = $props();
 </script>
 
 <header class="flex justify-center mt-4">
@@ -27,7 +49,7 @@
                     onclick={onStartNewGameClick}
                     title="Start a new game"
                 >
-                    New Game
+                    NEW GAME
                 </Button>
             </div>
 
@@ -35,21 +57,52 @@
             <div class="flex gap-2">
                 <span class="p-1.5 rounded-lg min-w-28 flex flex-col text-center bg-board text-tile-text font-medium text-lg leading-5">
                     <p class="text-sm">SCORE:</p>
+
                     <p class="text-2xl font-bold relative">
                         {score}
-                        <span bind:this={animationValueSpan}
-                            class={[
-                                "absolute top-0 left-1/2 text-tile-text-alt whitespace-nowrap",
-                                { "opacity-0": !showScoreAnimationValue }
-                            ]}
-                        >
-                           + {scoreAnimationValue}
+                        <span bind:this={score0} class={[ "animated-score", {"hidden": scoreIdxClassMap["score0"] === undefined} ]}>
+                           + {scoreIdxValueMap["score0"]}
+                        </span>
+                        <span bind:this={score1} class={[ "animated-score", {"hidden": scoreIdxClassMap["score1"] === undefined} ]}>
+                           + {scoreIdxValueMap["score1"]}
+                        </span>
+                        <span bind:this={score2} class={[ "animated-score", {"hidden": scoreIdxClassMap["score2"] === undefined} ]}>
+                           + {scoreIdxValueMap["score2"]}
+                        </span>
+                        <span bind:this={score3} class={[ "animated-score", {"hidden": scoreIdxClassMap["score3"] === undefined} ]}>
+                           + {scoreIdxValueMap["score3"]}
+                        </span>
+                        <span bind:this={score4} class={[ "animated-score", {"hidden": scoreIdxClassMap["score4"] === undefined} ]}>
+                           + {scoreIdxValueMap["score4"]}
+                        </span>
+                        <span bind:this={score5} class={[ "animated-score", {"hidden": scoreIdxClassMap["score5"] === undefined} ]}>
+                           + {scoreIdxValueMap["score5"]}
                         </span>
                     </p>
                 </span>
                 <span class="p-1.5 rounded-lg min-w-28 flex flex-col text-center bg-board text-tile-text font-medium text-lg leading-5">
                     <p class="text-sm">BEST:</p>
-                    <p class="text-2xl font-bold">{best}</p>
+                    <p class="text-2xl font-bold relative">
+                        {best}
+                        <span bind:this={best0} class={[ "animated-score", {"hidden": bestIdxClassMap["best0"] === undefined} ]}>
+                            + {bestIdxValueMap["best0"]}
+                         </span>
+                         <span bind:this={best1} class={[ "animated-score", {"hidden": bestIdxClassMap["best1"] === undefined} ]}>
+                            + {bestIdxValueMap["best1"]}
+                         </span>
+                         <span bind:this={best2} class={[ "animated-score", {"hidden": bestIdxClassMap["best2"] === undefined} ]}>
+                            + {bestIdxValueMap["best2"]}
+                         </span>
+                         <span bind:this={best3} class={[ "animated-score", {"hidden": bestIdxClassMap["best3"] === undefined} ]}>
+                            + {bestIdxValueMap["best3"]}
+                         </span>
+                         <span bind:this={best4} class={[ "animated-score", {"hidden": bestIdxClassMap["best4"] === undefined} ]}>
+                            + {bestIdxValueMap["best4"]}
+                         </span>
+                         <span bind:this={best5} class={[ "animated-score", {"hidden": bestIdxClassMap["best5"] === undefined} ]}>
+                            + {bestIdxValueMap["best5"]}
+                         </span>
+                    </p>
                 </span>
             </div>
         </div>

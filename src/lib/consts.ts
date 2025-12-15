@@ -24,9 +24,10 @@ export const SCALE_ANIMATION_DURATION_DOWN = 0.058;
 export const SCALE_ANIMATION_DURATION_KILL = 0.115;
 export const SCALE_ANIMATION_ANIMATION_EASE = "power1.inOut";
 
-export const SCORE_FADE_DURATION = 0.7;
-export const SCORE_XY_TRANS =  { y: -100, x: -20};
-export const SCORE_EASE = "expo";
+export const SCORE_ANIMATION_DURATION = 1.1;
+export const SCORE_XY_TRANS =  { y: -80};
+export const SCORE_XY_EASE = "power1.out";
+export const SCORE_OPACITY_EASE = "power2.inOut";
 
 export const SPAWN_DELAY = 0.12;
 export const NEW_GAME_DELAY = 0.15;

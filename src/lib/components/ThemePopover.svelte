@@ -13,8 +13,8 @@
 
   }
   function closePopover() {
-      gsap.fromTo(menuDiv!, { opacity: 1 }, { opacity: 0, duration: 0.35, onComplete: () => { isOpen = false }});
-      gsap.to( menuDiv!, { height: 0, duration: 0.1, ease: "power2.out" } );
+      gsap.fromTo(menuDiv!, { opacity: 1 }, { opacity: 0, duration: 0.09, onComplete: () => { isOpen = false }});
+      gsap.to( menuDiv!, { height: 0, duration: 0.08, ease: "power2.out"} );
   }
 
   let isOpen = $state(false);
@@ -86,6 +86,6 @@
 </div>
   
 {#snippet Separator()}
-  <div class="w-full h-px bg-board/50"></div>
+  <div class="w-full h-[3px] bg-board/50"></div>
 {/snippet}
 

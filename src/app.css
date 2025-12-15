@@ -152,7 +152,15 @@
 /* ------------------------------------------------------------- */
 
 @layer base {
-  body {
-    @apply bg-background text-foreground;
+	body {
+    	@apply bg-background text-foreground;
+	}
+
+    .animated-score {
+		@apply absolute top-1/2 left-1/2 -translate-x-7 -translate-y-1/2 text-tile-text-alt/80 whitespace-nowrap;
+	}
+
+	.animated-tile {
+		@apply absolute rounded-xl h-[100px] w-[100px] flex items-center justify-center;
 	}
 }
