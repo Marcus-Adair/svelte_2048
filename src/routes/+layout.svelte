@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
-	import { ModeWatcher, toggleMode } from "mode-watcher";
+	import ThemeWatcher from '$lib/components/ThemeWatcher.svelte';
+	import ThemePopover from '$lib/components/ThemePopover.svelte';
 
 	let { children } = $props();
 </script>
@@ -9,12 +10,11 @@
 	<link rel="icon" href="https://www.2048.org/favicon.ico" />
 </svelte:head>
 
-<ModeWatcher />
-<div class="relative">
-	<div class="absolute top-2 left-4">
-		<button onclick={toggleMode} class="border rounded-xl px-2 py-1 cursor-pointer" title="Toggle theme">
-			THEME!
-		</button>
+<ThemeWatcher />
+<div class="relative min-w-[650px]">
+	<div class="absolute right-4 text-2xl flex flex-col gap-2">
+		<ThemePopover/>
 	</div>
+
     {@render children()}
 </div>

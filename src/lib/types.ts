@@ -18,6 +18,13 @@ export type RefIndex =
   | "tile8"  | "tile9"  | "tile10" | "tile11"
   | "tile12" | "tile13" | "tile14" | "tile15";
 
+export type ScoreIndex =
+  | "score0"  | "score1"  | "score2" 
+  | "score3"  | "score4"  | "score5" ;
+  export type BestIndex =
+  | "best0"  | "best1"  | "best2" 
+  | "best3"  | "best4"  | "best5" ;
+
 export interface Tile {
     value: number;
     refIndex: RefIndex; // Ref to the name of the HTMLDivElement for animation
@@ -27,23 +34,22 @@ export interface GameState {
     board: Record<BoardSlotIdx, Tile | undefined>;
     step: number;
     score: number;
-    // best: number;
+    best: number;
 }
 
 export type SlideMap = Record<
-    string, // TODO: change to specific index type
+    string,
     { 
         slideValue: number; // Number of spaces to slide
         slideIdx: number // New Coordinate after sliding (can be for either x or y axis)
     } | undefined 
 >
 
-
 export type MergeMap = Record<
     string,
     {
         mergeValue: number; // If mergeValue is undefined then the Tile got killed in merge
-        refIndex: RefIndex;
+        refIndex: RefIndex; // Div to slide
 
     } | undefined
 >
